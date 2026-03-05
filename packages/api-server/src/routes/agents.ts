@@ -85,4 +85,27 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
+router.delete('/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const [rows] = await pool.execute<RowDataPacket[]>('SELECT * FROM agents WHERE id = ?', [id]);
+    const agent = rows[0];
+
+    await pool.execute('DELETE FROM agents WHERE id = ?', [id]);
+
+    if (agent) {
+      broadcastEvent({
+        event: 'agent:removed',
+        project_id: agent.project_id as number,
+        data: agent as Record<string, unknown>,
+      });
+    }
+
+    res.json({ success: true, data: { id } });
+  } catch (err: unknown) {
+    console.error('DELETE /agents error:', err);
+    res.status(500).json({ success: false, message: 'Failed to delete agent' });
+  }
+});
+
 export default router;

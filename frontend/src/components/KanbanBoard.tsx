@@ -10,6 +10,7 @@ import {
 import { useState } from 'react';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskCard } from './TaskCard';
+import { TaskDetailModal } from './TaskDetailModal';
 import { useTasks, useUpdateTaskStatus } from '@/hooks/useTasks';
 import type { Task, TaskStatus } from '@/types';
 
@@ -28,6 +29,7 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
   const { data: tasks = [] } = useTasks(projectId);
   const updateStatus = useUpdateTaskStatus();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -61,12 +63,16 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
             id={col.id}
             title={col.title}
             tasks={tasks.filter((t) => t.status === col.id)}
+            onTaskClick={(task) => setSelectedTask(task)}
           />
         ))}
       </div>
       <DragOverlay>
         {activeTask ? <TaskCard task={activeTask} isDragOverlay /> : null}
       </DragOverlay>
+      {selectedTask && (
+        <TaskDetailModal task={selectedTask} onClose={() => setSelectedTask(null)} />
+      )}
     </DndContext>
   );
 }

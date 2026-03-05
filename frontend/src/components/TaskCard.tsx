@@ -20,9 +20,10 @@ const PRIORITY_LABELS: Record<string, string> = {
 interface TaskCardProps {
   task: Task;
   isDragOverlay?: boolean;
+  onCardClick?: (task: Task) => void;
 }
 
-export function TaskCard({ task, isDragOverlay }: TaskCardProps) {
+export function TaskCard({ task, isDragOverlay, onCardClick }: TaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id.toString(),
   });
@@ -40,8 +41,11 @@ export function TaskCard({ task, isDragOverlay }: TaskCardProps) {
         PRIORITY_COLORS[task.priority],
         isDragging && 'opacity-40',
         isDragOverlay && 'shadow-xl rotate-2 scale-105',
-        !isDragOverlay && 'hover:shadow-md',
+        !isDragOverlay && 'hover:shadow-md cursor-pointer',
       )}
+      onClick={() => {
+        if (!isDragOverlay && onCardClick) onCardClick(task);
+      }}
     >
       <div className="flex items-start gap-2">
         {!isDragOverlay && (
@@ -49,6 +53,7 @@ export function TaskCard({ task, isDragOverlay }: TaskCardProps) {
             {...listeners}
             {...attributes}
             className="mt-0.5 cursor-grab text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] active:cursor-grabbing"
+            onClick={(e) => e.stopPropagation()}
           >
             <GripVertical size={14} />
           </button>
