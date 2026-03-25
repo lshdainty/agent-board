@@ -9,7 +9,7 @@ export function useTasks(projectId: number) {
     queryKey: ['tasks', projectId],
     queryFn: async () => {
       const resp = await api.get<ApiResponse<Task[]>>('/tasks', {
-        params: { project_id: projectId },
+        params: { project_id: projectId, limit: 500 },
       });
       return resp.data.data;
     },
