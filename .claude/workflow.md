@@ -65,10 +65,20 @@ OfficeView { projectId, theme }
 
 ## 에이전트 상태 자동화 (필수)
 
+### 등록된 에이전트 목록 (재활용 필수)
+| ID | 이름 | 역할 |
+|----|------|------|
+| 20 | FrontDev | Frontend Developer |
+| 21 | 3DDev | 3D Developer |
+| 22 | BackDev | Backend Developer |
+
+**새 에이전트를 DB에 추가하지 마라. 기존 에이전트를 재활용해라.**
+새 역할이 필요하면 기존 에이전트의 role을 PATCH로 변경.
+
 ### 팀 리더(사람 또는 상위 에이전트)가 해야 할 일
 에이전트를 spawn하기 **전에**:
-1. DB에 에이전트 등록: `curl -s -X POST http://localhost:3001/api/agents -H 'Content-Type: application/json' -d '{"project_id":1,"name":"<이름>","role":"<역할>","status":"working"}'`
-2. 응답에서 `data.id` 확인
+1. 기존 에이전트 ID를 확인 (위 목록 참고)
+2. 상태를 working으로 변경: `curl -s -X PATCH 'http://localhost:3001/api/agents/<ID>' -H 'Content-Type: application/json' -d '{"status":"working"}'`
 3. 에이전트 prompt에 **반드시** 아래 내용 포함:
    - `당신의 DB agent_id는 <ID>입니다`
    - 상태 업데이트 curl 명령 (working/idle/offline)
