@@ -81,6 +81,11 @@ OfficeView { projectId, theme }
 4. **태스크 생성**: `curl -s -X POST http://localhost:3001/api/tasks -H 'Content-Type: application/json' -d '{"project_id":1,"title":"<내용>","status":"in_progress","priority":"medium","assignee_id":<자기ID>}'`
 5. **태스크 완료**: `curl -s -X PATCH 'http://localhost:3001/api/tasks/<task_id>' -H 'Content-Type: application/json' -d '{"status":"done"}'`
 
+### 주의: 에이전트 보고 규칙
+- **보고는 SendMessage로 1회만**. 같은 내용을 반복 보고하지 마라.
+- 보고 후 추가 지시가 없으면 대기 상태로 전환.
+- 종료 요청(shutdown_request)이 오면 즉시 승인하고 종료.
+
 ### 주의: 팀 에이전트의 구조적 한계
 - in-process 에이전트는 `.claude/settings.json` 등 보호 파일 수정 시 권한 요청이 블록됨
 - 권한 요청은 팀 리더가 승인해야 하므로, **보호 파일 수정은 팀 리더가 직접 처리**
