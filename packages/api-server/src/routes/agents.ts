@@ -71,6 +71,15 @@ router.patch('/:id', async (req, res) => {
     const agent = rows[0];
 
     if (agent) {
+      if (status) {
+        const agentName = agent.name as string;
+        const message = `Agent ${agentName} status changed to ${status}`;
+        await pool.execute(
+          'INSERT INTO activity_logs (project_id, agent_id, action, message) VALUES (?, ?, ?, ?)',
+          [agent.project_id, id, 'agent_status_changed', message]
+        );
+      }
+
       broadcastEvent({
         event: 'agent:status_changed',
         project_id: agent.project_id as number,

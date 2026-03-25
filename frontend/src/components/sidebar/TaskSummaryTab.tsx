@@ -47,6 +47,9 @@ export function TaskSummaryTab({ projectId }: TaskSummaryTabProps) {
             {inProgressTasks.map((task) => (
               <div key={task.id} className="text-xs p-2 rounded-lg bg-[var(--color-background)]">
                 <p className="font-medium text-[var(--color-card-foreground)] truncate">{task.title}</p>
+                {task.description && (
+                  <p className="text-[10px] text-[var(--color-muted-foreground)] mt-0.5 line-clamp-2">{task.description}</p>
+                )}
                 {task.assignee_name && (
                   <p className="text-[var(--color-muted-foreground)] mt-0.5">{task.assignee_name}</p>
                 )}
