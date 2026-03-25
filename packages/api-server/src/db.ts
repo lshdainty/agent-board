@@ -1,5 +1,10 @@
 import dotenv from 'dotenv';
-dotenv.config({ path: 'packages/api-server/.env' });
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: resolve(__dirname, '..', '.env') });
 
 import mysql from 'mysql2/promise';
 

@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostEdit": [
+      {
+        "matcher": "frontend/src/**/*.{ts,tsx}",
+        "command": "cd /Users/lshdainty/study/agent-board/frontend && npx tsc --noEmit --pretty 2>&1 | tail -30"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Agent",
+        "command": "echo 'Agent spawned — remember to update agent status via /update-agent-status'"
+      }
+    ]
+  }
+}

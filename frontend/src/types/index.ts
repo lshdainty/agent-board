@@ -44,3 +44,24 @@ export interface ApiResponse<T = unknown> {
   success: boolean;
   data: T;
 }
+
+// Agent appearance (deterministic by ID)
+export type HairStyle = 'short' | 'long' | 'buzz' | 'hat' | 'ponytail' | 'mohawk' | 'afro';
+
+export interface AgentAppearance {
+  shirtColor: string;
+  pantsColor: string;
+  hairStyle: HairStyle;
+  hairColor: string;
+}
+
+// Agent position in 3D office
+export type AgentZone = 'desk' | 'meeting' | 'coffee' | 'walking';
+
+export interface AgentPosition {
+  current: [number, number, number];
+  target: [number, number, number];
+  zone: AgentZone;
+  deskSlotIndex?: number;
+  waypoints?: [number, number, number][];
+}
