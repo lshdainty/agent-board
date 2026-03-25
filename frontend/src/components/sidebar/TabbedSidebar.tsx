@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Users, ListTodo, Activity, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSelectedAgent } from '@/hooks/useSelectedAgent';
@@ -33,6 +33,13 @@ interface TabbedSidebarProps {
 export function TabbedSidebar({ projectId, theme, onToggleTheme }: TabbedSidebarProps) {
   const [activeTab, setActiveTab] = useState<TabId>('agents');
   const { selectedAgentId, setSelectedAgentId } = useSelectedAgent();
+
+  // Auto-switch to agents tab when an agent is selected (e.g. from 3D view)
+  useEffect(() => {
+    if (selectedAgentId !== null) {
+      setActiveTab('agents');
+    }
+  }, [selectedAgentId]);
 
   return (
     <div className="flex flex-col h-full bg-[var(--color-card)] rounded-lg border border-[var(--color-border)]">

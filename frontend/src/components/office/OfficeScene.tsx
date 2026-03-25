@@ -11,8 +11,10 @@ interface OfficeSceneProps {
   theme: 'light' | 'dark'
 }
 
-function CameraSetup() {
-  const { camera, size } = useThree()
+const BG = { light: '#e8ecf4', dark: '#080c18' } as const
+
+function SceneSetup({ theme }: { theme: 'light' | 'dark' }) {
+  const { camera, size, gl } = useThree()
 
   useEffect(() => {
     if (camera instanceof THREE.OrthographicCamera) {
@@ -23,6 +25,10 @@ function CameraSetup() {
     }
   }, [camera, size])
 
+  useEffect(() => {
+    gl.setClearColor(BG[theme])
+  }, [gl, theme])
+
   return null
 }
 
@@ -31,7 +37,7 @@ export function OfficeScene({ agents, tasks, theme }: OfficeSceneProps) {
 
   return (
     <>
-      <CameraSetup />
+      <SceneSetup theme={theme} />
 
       <OrbitControls
         enableRotate={true}

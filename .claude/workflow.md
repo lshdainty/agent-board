@@ -63,6 +63,39 @@ OfficeView { projectId, theme }
 - 에이전트 선택: `useSelectedAgent` (React Context)
 - 에이전트 위치: `useAgentPositions` (상태 기반 목표 위치 계산)
 
+## 에이전트 상태 자동화 (필수)
+모든 AI 에이전트는 아래 규칙을 반드시 따라야 합니다:
+
+### 작업 시작 시
+```bash
+# 자신을 DB에 등록 (처음 1회)
+curl -s -X POST http://localhost:3001/api/agents -H 'Content-Type: application/json' -d '{"project_id":1,"name":"<에이전트이름>","role":"<역할>","status":"working"}'
+
+# 이미 등록되어 있으면 상태만 변경
+curl -s -X PATCH 'http://localhost:3001/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"working"}'
+```
+
+### 작업 완료 시
+```bash
+curl -s -X PATCH 'http://localhost:3001/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"idle"}'
+```
+
+### 종료 시
+```bash
+curl -s -X PATCH 'http://localhost:3001/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"offline"}'
+```
+
+### 태스크 생성/업데이트
+```bash
+# 태스크 생성
+curl -s -X POST http://localhost:3001/api/tasks -H 'Content-Type: application/json' -d '{"project_id":1,"title":"<작업내용>","status":"in_progress","priority":"medium","assignee_id":<자기ID>}'
+
+# 태스크 완료
+curl -s -X PATCH 'http://localhost:3001/api/tasks/<task_id>' -H 'Content-Type: application/json' -d '{"status":"done"}'
+```
+
+이렇게 하면 3D 오피스 대시보드(localhost:5173)에서 실시간으로 에이전트 상태와 작업이 반영됩니다.
+
 ## 작업 시 주의사항
 - 파일 수정 후 PostEdit hook이 자동 타입체크 실행
 - 에러가 있으면 즉시 수정

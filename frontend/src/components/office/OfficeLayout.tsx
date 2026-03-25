@@ -8,6 +8,7 @@ import { Bookshelf } from './Bookshelf'
 import { CoffeeArea } from './CoffeeArea'
 import { AgentCharacter } from './AgentCharacter'
 import { DESK_SLOTS, MEETING_CENTER, COFFEE_AREA } from '@/constants/office'
+import { useSelectedAgent } from '@/hooks/useSelectedAgent'
 import type { Agent, Task } from '@/types'
 
 interface OfficeLayoutProps {
@@ -85,6 +86,8 @@ const Whiteboard = memo(function Whiteboard({
 })
 
 export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
+  const { toggleSelectedAgent } = useSelectedAgent()
+
   const { workingAgents, idleAgents, offlineAgents } = useMemo(() => {
     const working: Agent[] = []
     const idle: Agent[] = []
@@ -169,6 +172,7 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
             targetPosition={agentPos}
             currentTaskTitle={agentTaskMap.get(agent.id)}
             theme={theme}
+            onSelect={toggleSelectedAgent}
           />
         )
       })}
@@ -180,6 +184,7 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
           agent={agent}
           targetPosition={getMeetingSeatPosition(i, idleAgents.length)}
           theme={theme}
+          onSelect={toggleSelectedAgent}
         />
       ))}
 
@@ -198,6 +203,7 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
             agent={agent}
             targetPosition={agentPos}
             theme={theme}
+            onSelect={toggleSelectedAgent}
           />
         )
       })}

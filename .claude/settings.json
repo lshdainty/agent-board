@@ -9,7 +9,7 @@
     "PostToolUse": [
       {
         "matcher": "Agent",
-        "command": "echo 'Agent spawned — remember to update agent status via /update-agent-status'"
+        "command": "curl -s -X POST http://localhost:3001/api/agents -H 'Content-Type: application/json' -d '{\"project_id\":1,\"name\":\"'$(echo $CLAUDE_AGENT_NAME | head -c 20 || echo Agent)'\",\"role\":\"ai-agent\",\"status\":\"working\"}' 2>/dev/null || true"
       }
     ]
   }

@@ -11,6 +11,7 @@ interface AgentCharacterProps {
   targetPosition: [number, number, number]
   currentTaskTitle?: string
   theme?: 'light' | 'dark'
+  onSelect?: (agentId: number) => void
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -24,6 +25,7 @@ export function AgentCharacter({
   targetPosition,
   currentTaskTitle,
   theme = 'dark',
+  onSelect,
 }: AgentCharacterProps) {
   const groupRef = useRef<THREE.Group>(null)
   const torsoRef = useRef<THREE.Mesh>(null)
@@ -53,7 +55,21 @@ export function AgentCharacter({
   })
 
   return (
-    <group ref={groupRef} position={targetPosition}>
+    <group
+      ref={groupRef}
+      position={targetPosition}
+      onClick={(e) => {
+        e.stopPropagation()
+        onSelect?.(agent.id)
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation()
+        document.body.style.cursor = 'pointer'
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = 'auto'
+      }}
+    >
       {/* Head */}
       <mesh position={[0, 0.7, 0]} castShadow>
         <sphereGeometry args={[0.14, 16, 16]} />
