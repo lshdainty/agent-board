@@ -5,12 +5,6 @@
         "matcher": "frontend/src/**/*.{ts,tsx}",
         "command": "cd /Users/lshdainty/study/agent-board/frontend && npx tsc --noEmit --pretty 2>&1 | tail -30"
       }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Agent",
-        "command": "curl -s -X POST http://localhost:3001/api/agents -H 'Content-Type: application/json' -d '{\"project_id\":1,\"name\":\"'$(echo $CLAUDE_AGENT_NAME | head -c 20 || echo Agent)'\",\"role\":\"ai-agent\",\"status\":\"working\"}' 2>/dev/null || true"
-      }
     ]
   }
 }

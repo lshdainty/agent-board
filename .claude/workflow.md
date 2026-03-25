@@ -64,37 +64,27 @@ OfficeView { projectId, theme }
 - 에이전트 위치: `useAgentPositions` (상태 기반 목표 위치 계산)
 
 ## 에이전트 상태 자동화 (필수)
-모든 AI 에이전트는 아래 규칙을 반드시 따라야 합니다:
 
-### 작업 시작 시
-```bash
-# 자신을 DB에 등록 (처음 1회)
-curl -s -X POST http://localhost:3001/api/agents -H 'Content-Type: application/json' -d '{"project_id":1,"name":"<에이전트이름>","role":"<역할>","status":"working"}'
+### 팀 리더(사람 또는 상위 에이전트)가 해야 할 일
+에이전트를 spawn하기 **전에**:
+1. DB에 에이전트 등록: `curl -s -X POST http://localhost:3001/api/agents -H 'Content-Type: application/json' -d '{"project_id":1,"name":"<이름>","role":"<역할>","status":"working"}'`
+2. 응답에서 `data.id` 확인
+3. 에이전트 prompt에 **반드시** 아래 내용 포함:
+   - `당신의 DB agent_id는 <ID>입니다`
+   - 상태 업데이트 curl 명령 (working/idle/offline)
+   - 태스크 생성/완료 curl 명령
 
-# 이미 등록되어 있으면 상태만 변경
-curl -s -X PATCH 'http://localhost:3001/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"working"}'
-```
+### 에이전트가 해야 할 일
+1. **첫 번째 작업**: `curl -s -X PATCH 'http://localhost:3001/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"working"}'`
+2. **작업 완료 시**: `curl -s -X PATCH 'http://localhost:3001/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"idle"}'`
+3. **종료 시**: `curl -s -X PATCH 'http://localhost:3001/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"offline"}'`
+4. **태스크 생성**: `curl -s -X POST http://localhost:3001/api/tasks -H 'Content-Type: application/json' -d '{"project_id":1,"title":"<내용>","status":"in_progress","priority":"medium","assignee_id":<자기ID>}'`
+5. **태스크 완료**: `curl -s -X PATCH 'http://localhost:3001/api/tasks/<task_id>' -H 'Content-Type: application/json' -d '{"status":"done"}'`
 
-### 작업 완료 시
-```bash
-curl -s -X PATCH 'http://localhost:3001/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"idle"}'
-```
-
-### 종료 시
-```bash
-curl -s -X PATCH 'http://localhost:3001/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"offline"}'
-```
-
-### 태스크 생성/업데이트
-```bash
-# 태스크 생성
-curl -s -X POST http://localhost:3001/api/tasks -H 'Content-Type: application/json' -d '{"project_id":1,"title":"<작업내용>","status":"in_progress","priority":"medium","assignee_id":<자기ID>}'
-
-# 태스크 완료
-curl -s -X PATCH 'http://localhost:3001/api/tasks/<task_id>' -H 'Content-Type: application/json' -d '{"status":"done"}'
-```
-
-이렇게 하면 3D 오피스 대시보드(localhost:5173)에서 실시간으로 에이전트 상태와 작업이 반영됩니다.
+### 주의: 팀 에이전트의 구조적 한계
+- in-process 에이전트는 `.claude/settings.json` 등 보호 파일 수정 시 권한 요청이 블록됨
+- 권한 요청은 팀 리더가 승인해야 하므로, **보호 파일 수정은 팀 리더가 직접 처리**
+- 에이전트는 `frontend/src/`, `packages/` 등 코드 파일만 수정하도록 제한
 
 ## 작업 시 주의사항
 - 파일 수정 후 PostEdit hook이 자동 타입체크 실행
