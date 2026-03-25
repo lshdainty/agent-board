@@ -12,14 +12,14 @@ description: 에이전트 상태를 DB에 업데이트합니다. 3D 오피스 �
 
 ## 실행
 ```bash
-curl -s -X PATCH "http://localhost:3001/api/agents/<agent_id>" \
+curl -s -X PATCH "http://localhost:4000/api/agents/<agent_id>" \
   -H 'Content-Type: application/json' \
   -d '{"status": "<status>"}'
 ```
 
 ## 에이전트 등록 (최초 1회)
 ```bash
-curl -s -X POST http://localhost:3001/api/agents \
+curl -s -X POST http://localhost:4000/api/agents \
   -H 'Content-Type: application/json' \
   -d '{"project_id":1,"name":"<이름>","role":"<역할>","status":"working"}'
 ```
@@ -27,14 +27,14 @@ curl -s -X POST http://localhost:3001/api/agents \
 
 ## 태스크 생성
 ```bash
-curl -s -X POST http://localhost:3001/api/tasks \
+curl -s -X POST http://localhost:4000/api/tasks \
   -H 'Content-Type: application/json' \
   -d '{"project_id":1,"title":"<작업내용>","status":"in_progress","priority":"medium","assignee_id":<agent_id>}'
 ```
 
 ## 태스크 완료
 ```bash
-curl -s -X PATCH "http://localhost:3001/api/tasks/<task_id>" \
+curl -s -X PATCH "http://localhost:4000/api/tasks/<task_id>" \
   -H 'Content-Type: application/json' \
   -d '{"status":"done"}'
 ```
