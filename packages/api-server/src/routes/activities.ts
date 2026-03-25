@@ -9,6 +9,14 @@ router.get('/', async (req, res) => {
   try {
     const projectId = Number(req.query.project_id) || 1;
     const limit = Number(req.query.limit) || 50;
+    const offset = Number(req.query.offset) || 0;
+
+    const [countRows] = await pool.execute<RowDataPacket[]>(
+      'SELECT COUNT(*) AS total FROM activity_logs WHERE project_id = ?',
+      [projectId]
+    );
+    const total = (countRows[0] as { total: number }).total;
+
     const [rows] = await pool.execute<RowDataPacket[]>(
       `SELECT al.*, a.name AS agent_name, t.title AS task_title
        FROM activity_logs al
@@ -16,10 +24,10 @@ router.get('/', async (req, res) => {
        LEFT JOIN tasks t ON al.task_id = t.id
        WHERE al.project_id = ?
        ORDER BY al.created_at DESC
-       LIMIT ?`,
-      [projectId, limit]
+       LIMIT ? OFFSET ?`,
+      [projectId, limit, offset]
     );
-    res.json({ success: true, data: rows });
+    res.json({ success: true, data: rows, total });
   } catch (err: unknown) {
     console.error('GET /activities error:', err);
     res.status(500).json({ success: false, message: 'Failed to fetch activities' });

@@ -155,16 +155,28 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
       <Plant position={[9, 0, 5.5]} />
       <Whiteboard position={[4, 0, -5]} rotation={0} />
 
-      {/* Working agents → at desks */}
+      {/* Working agents → at desks (first 12), overflow near coffee area */}
       {workingAgents.map((agent, i) => {
-        const slotIndex = i % DESK_SLOTS.length
-        const deskSlot = DESK_SLOTS[slotIndex]
-        // Position agent at the chair (slightly behind desk)
-        const agentPos: [number, number, number] = [
-          deskSlot.position[0],
-          deskSlot.position[1],
-          deskSlot.position[2] + 0.55,
-        ]
+        let agentPos: [number, number, number]
+        if (i < DESK_SLOTS.length) {
+          const deskSlot = DESK_SLOTS[i]
+          // Position agent at the chair (slightly behind desk)
+          agentPos = [
+            deskSlot.position[0],
+            deskSlot.position[1],
+            deskSlot.position[2] + 0.55,
+          ]
+        } else {
+          // Overflow agents are placed around the coffee area
+          const overflowIndex = i - DESK_SLOTS.length
+          const angle = (overflowIndex / Math.max(workingAgents.length - DESK_SLOTS.length, 1)) * Math.PI * 2 - Math.PI / 2
+          const radius = 1.4
+          agentPos = [
+            COFFEE_AREA[0] + Math.cos(angle) * radius,
+            0,
+            COFFEE_AREA[2] + Math.sin(angle) * radius,
+          ]
+        }
         return (
           <AgentCharacter
             key={agent.id}

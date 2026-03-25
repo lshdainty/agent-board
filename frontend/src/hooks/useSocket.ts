@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function useSocket(projectId: number) {
   const socketRef = useRef<Socket | null>(null);
   const queryClient = useQueryClient();
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     const socket = io('/', {
@@ -19,7 +20,12 @@ export function useSocket(projectId: number) {
 
     socket.on('connect', () => {
       console.log('Dashboard connected');
+      setIsConnected(true);
       socket.emit('join_project', projectId);
+    });
+
+    socket.on('disconnect', () => {
+      setIsConnected(false);
     });
 
     const taskEvents = ['task:created', 'task:updated', 'task:claimed', 'task:completed'];
@@ -48,5 +54,5 @@ export function useSocket(projectId: number) {
     };
   }, [projectId, queryClient]);
 
-  return socketRef;
+  return { socketRef, isConnected };
 }

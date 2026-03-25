@@ -22,6 +22,17 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { project_id, name, role, status } = req.body;
+
+    if (!name) {
+      res.status(400).json({ success: false, message: 'Invalid name' });
+      return;
+    }
+    const validStatuses = ['idle', 'working', 'offline'];
+    if (status && !validStatuses.includes(status)) {
+      res.status(400).json({ success: false, message: 'Invalid status' });
+      return;
+    }
+
     const [result] = await pool.execute<ResultSetHeader>(
       'INSERT INTO agents (project_id, name, role, status) VALUES (?, ?, ?, ?)',
       [project_id, name, role ?? 'developer', status ?? 'idle']
@@ -50,6 +61,13 @@ router.patch('/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
     const { status, role, name } = req.body as { status?: string; role?: string; name?: string };
+
+    const validStatuses = ['idle', 'working', 'offline'];
+    if (status && !validStatuses.includes(status)) {
+      res.status(400).json({ success: false, message: 'Invalid status' });
+      return;
+    }
+
     const setClauses: string[] = [];
     const params: (string | number)[] = [];
 

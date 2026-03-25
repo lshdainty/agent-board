@@ -78,7 +78,9 @@ OfficeView { projectId, theme }
 1. **첫 번째 작업**: `curl -s -X PATCH 'http://localhost:3001/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"working"}'`
 2. **작업 완료 시**: `curl -s -X PATCH 'http://localhost:3001/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"idle"}'`
 3. **종료 시**: `curl -s -X PATCH 'http://localhost:3001/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"offline"}'`
-4. **태스크 생성**: `curl -s -X POST http://localhost:3001/api/tasks -H 'Content-Type: application/json' -d '{"project_id":1,"title":"<제목>","description":"<구체적인 작업 내용. 무엇을 왜 어떻게 했는지 상세히 적어라>","status":"in_progress","priority":"medium","assignee_id":<자기ID>}'`
+4. **태스크 생성**: `curl -s -X POST http://localhost:3001/api/tasks -H 'Content-Type: application/json' -d '{"project_id":1,"title":"<제목>","description":"<구체적인 작업 내용. 무엇을 왜 어떻게 했는지 상세히 적어라>","status":"todo","priority":"medium","assignee_id":<자기ID>}'`
+   - 작업 시작 시: `curl -s -X PATCH 'http://localhost:3001/api/tasks/<id>' -d '{"status":"in_progress"}'`
+   - **반드시 todo → in_progress → done 순서를 지켜라. 바로 done으로 넘기지 마라.**
    - **title**: 간결한 제목 (예: "OfficeScene 다크모드 수정")
    - **description**: 상세 설명 필수. 수정한 파일, 변경 내용, 이유를 적어라. 비워두지 마라.
 5. **태스크 완료**: `curl -s -X PATCH 'http://localhost:3001/api/tasks/<task_id>' -H 'Content-Type: application/json' -d '{"status":"done"}'`

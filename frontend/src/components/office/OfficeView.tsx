@@ -29,10 +29,35 @@ class Scene3DErrorBoundary extends Component<
   render() {
     if (this.state.error) {
       return (
-        <mesh>
-          <boxGeometry args={[2, 2, 2]} />
-          <meshStandardMaterial color="red" />
-        </mesh>
+        <div style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: '12px',
+          fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+          color: '#94a3b8',
+        }}>
+          <div style={{ fontSize: '14px', fontWeight: 500 }}>
+            3D 렌더링 오류가 발생했습니다. 새로고침해주세요.
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              padding: '6px 16px',
+              fontSize: '13px',
+              borderRadius: '6px',
+              border: '1px solid #334155',
+              background: 'transparent',
+              color: '#94a3b8',
+              cursor: 'pointer',
+            }}
+          >
+            새로고침
+          </button>
+        </div>
       )
     }
     return this.props.children
@@ -46,22 +71,22 @@ export function OfficeView({ projectId, theme }: OfficeViewProps) {
 
   return (
     <div style={{ width: '100%', height: '100%', background: bg, borderRadius: '12px', overflow: 'hidden' }}>
-      <Canvas
-        shadows
-        frameloop="always"
-        orthographic
-        camera={{ position: [15, 15, 15], zoom: 40, near: 0.1, far: 100 }}
-        gl={{ antialias: true, alpha: false }}
-        onCreated={({ gl }) => {
-          gl.setClearColor(bg)
-        }}
-      >
-        <Scene3DErrorBoundary>
+      <Scene3DErrorBoundary>
+        <Canvas
+          shadows
+          frameloop="demand"
+          orthographic
+          camera={{ position: [15, 15, 15], zoom: 40, near: 0.1, far: 100 }}
+          gl={{ antialias: true, alpha: false }}
+          onCreated={({ gl }) => {
+            gl.setClearColor(bg)
+          }}
+        >
           <Suspense fallback={null}>
             <OfficeScene agents={agents} tasks={tasks} theme={theme} />
           </Suspense>
-        </Scene3DErrorBoundary>
-      </Canvas>
+        </Canvas>
+      </Scene3DErrorBoundary>
 
       <div
         style={{

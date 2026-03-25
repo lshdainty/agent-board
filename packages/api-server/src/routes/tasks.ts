@@ -9,19 +9,32 @@ router.get('/', async (req, res) => {
   try {
     const projectId = Number(req.query.project_id) || 1;
     const status = req.query.status as string | undefined;
-    let query = `
+    const limit = Number(req.query.limit) || 50;
+    const offset = Number(req.query.offset) || 0;
+
+    let whereClause = 'WHERE t.project_id = ?';
+    const countParams: (string | number)[] = [projectId];
+    if (status) { whereClause += ' AND t.status = ?'; countParams.push(status); }
+
+    const [countRows] = await pool.execute<RowDataPacket[]>(
+      `SELECT COUNT(*) AS total FROM tasks t ${whereClause}`,
+      countParams
+    );
+    const total = (countRows[0] as { total: number }).total;
+
+    const query = `
       SELECT t.*, a.name AS assignee_name, c.name AS created_by_name
       FROM tasks t
       LEFT JOIN agents a ON t.assignee_id = a.id
       LEFT JOIN agents c ON t.created_by_id = c.id
-      WHERE t.project_id = ?
+      ${whereClause}
+      ORDER BY t.sort_order ASC
+      LIMIT ? OFFSET ?
     `;
-    const params: (string | number)[] = [projectId];
-    if (status) { query += ' AND t.status = ?'; params.push(status); }
-    query += ' ORDER BY t.sort_order ASC';
+    const params = [...countParams, limit, offset];
 
     const [rows] = await pool.execute<RowDataPacket[]>(query, params);
-    res.json({ success: true, data: rows });
+    res.json({ success: true, data: rows, total });
   } catch (err: unknown) {
     console.error('GET /tasks error:', err);
     res.status(500).json({ success: false, message: 'Failed to fetch tasks' });
@@ -31,6 +44,22 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { project_id, title, description, status, priority, assignee_id, created_by_id, sort_order } = req.body;
+
+    if (!title) {
+      res.status(400).json({ success: false, message: 'Invalid title' });
+      return;
+    }
+    const validStatuses = ['todo', 'in_progress', 'review', 'done'];
+    if (status && !validStatuses.includes(status)) {
+      res.status(400).json({ success: false, message: 'Invalid status' });
+      return;
+    }
+    const validPriorities = ['low', 'medium', 'high', 'urgent'];
+    if (priority && !validPriorities.includes(priority)) {
+      res.status(400).json({ success: false, message: 'Invalid priority' });
+      return;
+    }
+
     const [result] = await pool.execute<ResultSetHeader>(
       `INSERT INTO tasks (project_id, title, description, status, priority, assignee_id, created_by_id, sort_order)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,

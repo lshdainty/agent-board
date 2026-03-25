@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { KanbanBoard } from '@/components/KanbanBoard';
 import { TabbedSidebar } from '@/components/sidebar/TabbedSidebar';
@@ -64,8 +64,21 @@ function Dashboard() {
   const [projectId, setProjectId] = useState<number>(1);
   const [activeView, setActiveView] = useState<ViewMode>('office');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useTheme();
-  useSocket(projectId);
+  const { isConnected } = useSocket(projectId);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [dropdownOpen]);
 
   // Auto-select first project when projects load
   useEffect(() => {
@@ -115,7 +128,7 @@ function Dashboard() {
           </div>
 
           {/* Project selector */}
-          <div className="relative">
+          <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)] transition-colors"
@@ -156,8 +169,8 @@ function Dashboard() {
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           </button>
           <div className="flex items-center gap-2 text-xs text-[var(--color-muted-foreground)]">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            Connected
+            <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+            {isConnected ? 'Connected' : 'Disconnected'}
           </div>
         </div>
       </header>
