@@ -31,14 +31,47 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 // Build occupancy grid once (module-level cache)
-const obstacles = DESK_SLOTS.map((slot) => ({
-  center: [slot.position[0], slot.position[2]] as [number, number],
-  halfSize: [0.6, 0.4] as [number, number],
-}))
+const obstacles: { center: [number, number]; halfSize: [number, number] }[] = []
+
+// Desks
+DESK_SLOTS.forEach((slot) => {
+  obstacles.push({
+    center: [slot.position[0], slot.position[2]],
+    halfSize: [0.8, 0.5],
+  })
+})
+
+// Meeting table
 obstacles.push({
   center: [MEETING_CENTER[0], MEETING_CENTER[2]],
   halfSize: [1.2, 1.2],
 })
+
+// Side partitions (between desks in same row, direction="z")
+for (let row = 0; row < 3; row++) {
+  const rowSlots = DESK_SLOTS.slice(row * 4, row * 4 + 4)
+  for (let i = 0; i < rowSlots.length - 1; i++) {
+    const midX = (rowSlots[i].position[0] + rowSlots[i + 1].position[0]) / 2
+    obstacles.push({
+      center: [midX, rowSlots[i].position[2]],
+      halfSize: [0.05, 0.7],  // thin wall along Z
+    })
+  }
+}
+
+// Back partitions (between rows, direction="x")
+for (let row = 0; row < 2; row++) {
+  const currentRow = DESK_SLOTS.slice(row * 4, row * 4 + 4)
+  const nextRow = DESK_SLOTS.slice((row + 1) * 4, (row + 1) * 4 + 4)
+  const midZ = (currentRow[0].position[2] + nextRow[0].position[2]) / 2
+  for (let i = 0; i < currentRow.length; i++) {
+    obstacles.push({
+      center: [currentRow[i].position[0], midZ],
+      halfSize: [0.7, 0.05],  // thin wall along X
+    })
+  }
+}
+
 const occupancyGrid = buildOccupancyGrid(
   ROOM_WIDTH,
   ROOM_DEPTH,
