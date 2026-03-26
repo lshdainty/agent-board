@@ -9,13 +9,13 @@ interface DeskPartitionProps {
 export const DeskPartition = memo(function DeskPartition({ position, width, theme }: DeskPartitionProps) {
   const isDark = theme === 'dark'
 
-  // Fabric/felt panel colors (like real office cubicle walls)
-  const fabricColor = isDark ? '#4a5580' : '#7a8599'
-  // Metal frame/trim
-  const trimColor = isDark ? '#666d80' : '#555b68'
+  // Fabric/felt panel — dark blue-gray to contrast with light floor/desk
+  const fabricColor = isDark ? '#3a4565' : '#4b5568'
+  // Metal frame/trim — darker
+  const trimColor = isDark ? '#8890a0' : '#374151'
 
-  const panelThickness = 0.08
-  const panelHeight = 0.6
+  const panelThickness = 0.12
+  const panelHeight = 0.75
   const baseY = 0.55 // desk surface level
   const centerY = baseY + panelHeight / 2
 
