@@ -9,52 +9,38 @@ interface DeskPartitionProps {
 export const DeskPartition = memo(function DeskPartition({ position, width, theme }: DeskPartitionProps) {
   const isDark = theme === 'dark'
 
-  // Frame colors
-  const frameColor = isDark ? '#4a5068' : '#9ca3af'
-  // Panel colors
-  const panelColor = isDark ? '#2d3348' : '#cbd5e1'
-  const panelOpacity = isDark ? 0.7 : 0.6
+  // Fabric/felt panel colors (like real office cubicle walls)
+  const fabricColor = isDark ? '#4a5580' : '#7a8599'
+  // Metal frame/trim
+  const trimColor = isDark ? '#666d80' : '#555b68'
 
-  const frameThickness = 0.04
-  const partitionHeight = 0.55
-  const baseY = position[1] + 0.55 // starts at desk surface level
-  const centerY = baseY + partitionHeight / 2
+  const panelThickness = 0.08
+  const panelHeight = 0.6
+  const baseY = 0.55 // desk surface level
+  const centerY = baseY + panelHeight / 2
 
   return (
     <group>
-      {/* Main panel — frosted glass look */}
+      {/* Main fabric panel */}
       <mesh position={[position[0], centerY, position[2]]} castShadow receiveShadow>
-        <boxGeometry args={[frameThickness, partitionHeight, width]} />
+        <boxGeometry args={[panelThickness, panelHeight, width]} />
         <meshStandardMaterial
-          color={panelColor}
-          transparent
-          opacity={panelOpacity}
-          roughness={0.9}
+          color={fabricColor}
+          roughness={1.0}
+          metalness={0}
         />
       </mesh>
 
-      {/* Top frame bar */}
-      <mesh position={[position[0], baseY + partitionHeight, position[2]]}>
-        <boxGeometry args={[frameThickness + 0.02, 0.03, width + 0.02]} />
-        <meshStandardMaterial color={frameColor} />
+      {/* Top metal trim */}
+      <mesh position={[position[0], baseY + panelHeight + 0.015, position[2]]}>
+        <boxGeometry args={[panelThickness + 0.02, 0.03, width + 0.01]} />
+        <meshStandardMaterial color={trimColor} roughness={0.3} metalness={0.6} />
       </mesh>
 
-      {/* Bottom frame bar */}
-      <mesh position={[position[0], baseY, position[2]]}>
-        <boxGeometry args={[frameThickness + 0.02, 0.03, width + 0.02]} />
-        <meshStandardMaterial color={frameColor} />
-      </mesh>
-
-      {/* Left vertical frame */}
-      <mesh position={[position[0], centerY, position[2] - width / 2]}>
-        <boxGeometry args={[frameThickness + 0.02, partitionHeight + 0.03, 0.03]} />
-        <meshStandardMaterial color={frameColor} />
-      </mesh>
-
-      {/* Right vertical frame */}
-      <mesh position={[position[0], centerY, position[2] + width / 2]}>
-        <boxGeometry args={[frameThickness + 0.02, partitionHeight + 0.03, 0.03]} />
-        <meshStandardMaterial color={frameColor} />
+      {/* Bottom metal trim (at desk level) */}
+      <mesh position={[position[0], baseY - 0.015, position[2]]}>
+        <boxGeometry args={[panelThickness + 0.02, 0.03, width + 0.01]} />
+        <meshStandardMaterial color={trimColor} roughness={0.3} metalness={0.6} />
       </mesh>
     </group>
   )

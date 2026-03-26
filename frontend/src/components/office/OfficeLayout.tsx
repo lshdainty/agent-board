@@ -361,7 +361,7 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
             <DeskPartition
               key={`partition-${row}-${i}`}
               position={[midX, 0, slot.position[2]]}
-              width={0.7}
+              width={1.4}
               theme={theme}
             />
           )
