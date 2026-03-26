@@ -60,7 +60,7 @@ router.post('/', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const { status, role, name } = req.body as { status?: string; role?: string; name?: string };
+    const { status, role, name, current_comment } = req.body as { status?: string; role?: string; name?: string; current_comment?: string | null };
 
     const validStatuses = ['idle', 'working', 'offline'];
     if (status && !validStatuses.includes(status)) {
@@ -69,11 +69,12 @@ router.patch('/:id', async (req, res) => {
     }
 
     const setClauses: string[] = [];
-    const params: (string | number)[] = [];
+    const params: (string | number | null)[] = [];
 
     if (status) { setClauses.push('status = ?'); params.push(status); }
     if (role) { setClauses.push('role = ?'); params.push(role); }
     if (name) { setClauses.push('name = ?'); params.push(name); }
+    if (current_comment !== undefined) { setClauses.push('current_comment = ?'); params.push(current_comment); }
 
     if (setClauses.length === 0) {
       res.status(400).json({ success: false, message: 'No fields to update' });

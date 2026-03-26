@@ -24,6 +24,7 @@ export interface Agent {
   name: string;
   role: string;
   status: AgentStatus;
+  current_comment: string | null;
   last_seen_at: string;
   created_at: string;
 }

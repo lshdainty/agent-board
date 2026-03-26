@@ -85,9 +85,12 @@ OfficeView { projectId, theme }
    - 태스크 생성/완료 curl 명령
 
 ### 에이전트가 해야 할 일
-1. **첫 번째 작업**: `curl -s -X PATCH 'http://localhost:4000/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"working"}'`
-2. **작업 완료 시**: `curl -s -X PATCH 'http://localhost:4000/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"idle"}'`
-3. **종료 시**: `curl -s -X PATCH 'http://localhost:4000/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"offline"}'`
+1. **첫 번째 작업**: `curl -s -X PATCH 'http://localhost:4000/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"working","current_comment":"<첫 번째 작업 내용>"}'`
+2. **파일 수정 전마다**: `curl -s -X PATCH 'http://localhost:4000/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"current_comment":"<파일명> <작업 내용>"}'`
+   - 예: `{"current_comment":"MemoEditorWidget.tsx 자동저장 구현"}`
+   - 예: `{"current_comment":"agents.ts 입력 검증 추가"}`
+3. **작업 완료 시**: `curl -s -X PATCH 'http://localhost:4000/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"idle","current_comment":null}'`
+4. **종료 시**: `curl -s -X PATCH 'http://localhost:4000/api/agents/<자기ID>' -H 'Content-Type: application/json' -d '{"status":"offline","current_comment":null}'`
 4. **태스크 생성**: `curl -s -X POST http://localhost:4000/api/tasks -H 'Content-Type: application/json' -d '{"project_id":1,"title":"<제목>","description":"<구체적인 작업 내용. 무엇을 왜 어떻게 했는지 상세히 적어라>","status":"todo","priority":"medium","assignee_id":<자기ID>}'`
    - 작업 시작 시: `curl -s -X PATCH 'http://localhost:4000/api/tasks/<id>' -d '{"status":"in_progress"}'`
    - **반드시 todo → in_progress → done 순서를 지켜라. 바로 done으로 넘기지 마라.**
@@ -107,11 +110,17 @@ OfficeView { projectId, theme }
 - **기존 태스크 ID를 알려주고 in_progress로 변경하라고 지시해라** — 새 태스크를 만들지 않도록
 - 예시 prompt 구조:
   ```
-  1단계: 상태 working으로 변경 (curl 명령)
+  1단계: 상태 working + 코멘트 설정 (curl 명령)
+     curl PATCH agents/<ID> '{"status":"working","current_comment":"태스크 분석 시작"}'
   2단계: 태스크 #OOO를 in_progress로 변경 (curl 명령)
-  3단계: 파일 읽기 → 코드 수정 → 타입체크
+  3단계: 파일 수정 전 코멘트 변경 → 코드 수정 → 타입체크
+     curl PATCH agents/<ID> '{"current_comment":"OfficeScene.tsx 다크모드 수정"}'
+     // 파일 수정
+     curl PATCH agents/<ID> '{"current_comment":"AgentNameLabel.tsx 라벨 개선"}'
+     // 파일 수정
   4단계: 태스크 #OOO를 done으로 변경 (curl 명령)
-  5단계: 상태 idle로 변경 + 보고 1회
+  5단계: 상태 idle + 코멘트 초기화 + 보고 1회
+     curl PATCH agents/<ID> '{"status":"idle","current_comment":null}'
   ```
 
 ### 에이전트 재지시 시 규칙
@@ -142,9 +151,10 @@ OfficeView { projectId, theme }
 ### 팀 리더의 에이전트 상태 업데이트 의무 (반드시 지켜라)
 
 **에이전트에게 작업을 시킬 때 팀 리더가 직접 해야 할 것:**
-1. 작업 시작 전: `curl PATCH agents/<ID> working` + `curl POST tasks (in_progress)`
-2. 작업 완료 후: `curl PATCH agents/<ID> idle` + `curl PATCH tasks/<ID> done`
-3. 이걸 빠뜨리면 대시보드에 상태가 반영 안 됨 — **절대 빠뜨리지 마라**
+1. 작업 시작 전: `curl PATCH agents/<ID> '{"status":"working","current_comment":"<작업 내용>"}'` + `curl POST tasks (in_progress)`
+2. 에이전트가 파일 수정할 때마다 `current_comment`를 갱신하도록 prompt에 명시
+3. 작업 완료 후: `curl PATCH agents/<ID> '{"status":"idle","current_comment":null}'` + `curl PATCH tasks/<ID> done`
+4. 이걸 빠뜨리면 대시보드에 상태가 반영 안 됨 — **절대 빠뜨리지 마라**
 
 ### 팀 리더의 에이전트 상태 모니터링 규칙
 

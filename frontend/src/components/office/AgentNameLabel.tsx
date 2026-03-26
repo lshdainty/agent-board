@@ -10,6 +10,7 @@ interface AgentNameLabelProps {
   role: string
   status: AgentStatus
   taskTitle?: string
+  currentComment?: string | null
   theme: 'light' | 'dark'
 }
 
@@ -19,7 +20,7 @@ const STATUS_COLORS: Record<AgentStatus, string> = {
   offline: '#64748b',
 }
 
-export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNameLabelProps) {
+export function AgentNameLabel({ name, role, status, taskTitle, currentComment, theme }: AgentNameLabelProps) {
   const { settings } = useSettings()
 
   if (!settings.nameLabels) return null
@@ -111,7 +112,8 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
       <Billboard follow lockX={false} lockY={false} lockZ={false}>
         {/* Background — rounded box */}
         {(() => {
-          const bgW = Math.max(name.length * 0.12 + 0.15, role.length * 0.07 + 0.15, 0.6)
+          const displayText = status === 'working' && currentComment ? currentComment : role
+          const bgW = Math.max(name.length * 0.12 + 0.15, Math.min(displayText.length * 0.065 + 0.15, 2.0), 0.6)
           return (
             <RoundedBox
               args={[bgW, 0.55, 0.02]}
@@ -140,16 +142,17 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
           {name}
         </Text>
 
-        {/* Role */}
+        {/* Role or current comment */}
         <Text
           position={[0, 0, 0]}
-          fontSize={0.09}
-          color={subColor}
+          fontSize={0.08}
+          color={status === 'working' && currentComment ? (isDark ? '#93c5fd' : '#2563eb') : subColor}
           anchorX="center"
           anchorY="middle"
+          maxWidth={1.8}
           font={undefined}
         >
-          {role}
+          {status === 'working' && currentComment ? currentComment : role}
         </Text>
 
         {/* Status: dot + label — clearly visible */}

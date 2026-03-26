@@ -500,6 +500,7 @@ export function AgentCharacter({
           role={agent.role}
           status={agent.status}
           taskTitle={currentTaskTitle}
+          currentComment={agent.current_comment}
           theme={theme}
         />
       </group>
