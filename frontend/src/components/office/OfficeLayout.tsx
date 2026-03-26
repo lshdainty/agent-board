@@ -351,7 +351,7 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
         </group>
       ))}
 
-      {/* Desk partitions between desks in the same row */}
+      {/* Desk partitions — side walls between desks in same row */}
       {[0, 1, 2].map((row) => {
         const rowSlots = DESK_SLOTS.slice(row * 4, row * 4 + 4)
         return rowSlots.slice(0, -1).map((slot, i) => {
@@ -359,13 +359,30 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
           const midX = (slot.position[0] + nextSlot.position[0]) / 2
           return (
             <DeskPartition
-              key={`partition-${row}-${i}`}
+              key={`partition-side-${row}-${i}`}
               position={[midX, 0, slot.position[2]]}
               width={1.4}
+              direction="z"
               theme={theme}
             />
           )
         })
+      })}
+
+      {/* Desk partitions — back walls between rows */}
+      {[0, 1].map((row) => {
+        const currentRow = DESK_SLOTS.slice(row * 4, row * 4 + 4)
+        const nextRow = DESK_SLOTS.slice((row + 1) * 4, (row + 1) * 4 + 4)
+        const midZ = (currentRow[0].position[2] + nextRow[0].position[2]) / 2
+        return currentRow.map((slot, i) => (
+          <DeskPartition
+            key={`partition-back-${row}-${i}`}
+            position={[slot.position[0], 0, midZ]}
+            width={1.4}
+            direction="x"
+            theme={theme}
+          />
+        ))
       })}
 
       {/* Meeting table */}
