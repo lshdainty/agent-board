@@ -25,36 +25,46 @@ function deskChairPosition(slotIndex: number): [number, number, number] {
  * Uses a seeded pseudo-random based on agentId + changeCount so each agent
  * gets a stable-but-varied destination that changes when status changes.
  */
-function pickIdleDestination(
-  agentId: number,
-  idleIndex: number,
-  totalIdle: number,
-  changeCount: number,
-): { position: [number, number, number]; zone: 'meeting' | 'coffee' | 'bookshelf' } {
-  // Simple hash from agentId + changeCount
-  const seed = (agentId * 7919 + changeCount * 1301) % 100
+// All possible idle spots — each agent gets a unique one by index
+function getAllIdleSpots(): { position: [number, number, number]; zone: 'meeting' | 'coffee' | 'bookshelf' }[] {
+  const spots: { position: [number, number, number]; zone: 'meeting' | 'coffee' | 'bookshelf' }[] = []
 
-  if (seed < 50) {
-    // Meeting table — circular arrangement
-    const angle = (idleIndex / Math.max(totalIdle, 1)) * Math.PI * 2 - Math.PI / 2
+  // Meeting table — 6 evenly spaced seats around the table
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2 - Math.PI / 2
     const radius = 1.6
-    return {
+    spots.push({
       position: [
         MEETING_CENTER[0] + Math.cos(angle) * radius,
         0,
         MEETING_CENTER[2] + Math.sin(angle) * radius,
       ],
       zone: 'meeting',
-    }
-  } else if (seed < 80) {
-    // Coffee area seats
-    const seatIdx = idleIndex % COFFEE_SEATS.length
-    return { position: [...COFFEE_SEATS[seatIdx]], zone: 'coffee' }
-  } else {
-    // Bookshelf browsing
-    const shelfIdx = idleIndex % BOOKSHELF_POSITIONS.length
-    return { position: [...BOOKSHELF_POSITIONS[shelfIdx]], zone: 'bookshelf' }
+    })
   }
+
+  // Coffee seats
+  for (const seat of COFFEE_SEATS) {
+    spots.push({ position: [...seat], zone: 'coffee' })
+  }
+
+  // Bookshelf positions
+  for (const pos of BOOKSHELF_POSITIONS) {
+    spots.push({ position: [...pos], zone: 'bookshelf' })
+  }
+
+  return spots
+}
+
+const IDLE_SPOTS = getAllIdleSpots()
+
+function pickIdleDestination(
+  _agentId: number,
+  idleIndex: number,
+): { position: [number, number, number]; zone: 'meeting' | 'coffee' | 'bookshelf' } {
+  // Each idle agent gets a unique spot by index — no overlapping
+  const spotIdx = idleIndex % IDLE_SPOTS.length
+  return IDLE_SPOTS[spotIdx]
 }
 
 /**
@@ -129,12 +139,9 @@ export function useAgentPositions(
     // Idle agents -> randomized between meeting, coffee, bookshelf
     for (let i = 0; i < idle.length; i++) {
       const agent = idle[i]
-      const changeCount = statusChangeCountRef.current.get(agent.id) || 0
       const { position: target, zone } = pickIdleDestination(
         agent.id,
         i,
-        idle.length,
-        changeCount,
       )
       const prev = lastKnownPositionRef.current.get(agent.id) || target
 
