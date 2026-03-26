@@ -106,8 +106,8 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
       <Billboard follow lockX={false} lockY={false} lockZ={false}>
         {/* Name */}
         <Text
-          position={[0, 0.12, 0]}
-          fontSize={0.18}
+          position={[0, 0.15, 0]}
+          fontSize={0.16}
           color={textColor}
           anchorX="center"
           anchorY="middle"
@@ -119,8 +119,8 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
 
         {/* Role + Status dot */}
         <Text
-          position={[0.04, -0.02, 0]}
-          fontSize={0.10}
+          position={[0.04, -0.05, 0]}
+          fontSize={0.08}
           color={subColor}
           anchorX="center"
           anchorY="middle"
@@ -130,14 +130,14 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
         </Text>
 
         {/* Status dot */}
-        <mesh ref={dotRef} position={[-0.35, -0.02, 0]}>
+        <mesh ref={dotRef} position={[-0.35, -0.05, 0]}>
           <sphereGeometry args={[0.035, 8, 8]} />
           <meshBasicMaterial color={STATUS_COLORS[status]} />
         </mesh>
 
         {/* Working: typing dots animation */}
         {status === 'working' && (
-          <group ref={typingDotsRef} position={[0.30, -0.02, 0]}>
+          <group ref={typingDotsRef} position={[0.30, -0.05, 0]}>
             {[0, 1, 2].map((i) => (
               <mesh key={i} position={[i * 0.05, 0, 0]}>
                 <sphereGeometry args={[0.02, 6, 6]} />
@@ -150,8 +150,8 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
         {/* Idle/offline: emoji indicator */}
         {(status === 'idle' || status === 'offline') && (
           <Text
-            position={[0.30, -0.02, 0]}
-            fontSize={0.10}
+            position={[0.30, -0.05, 0]}
+            fontSize={0.08}
             color={subColor}
             anchorX="center"
             anchorY="middle"

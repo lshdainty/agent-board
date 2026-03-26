@@ -1,4 +1,4 @@
-import { useRef, useMemo, useCallback } from 'react'
+import { useRef, useMemo, useCallback, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { Agent } from '@/types'
@@ -96,6 +96,7 @@ export function AgentCharacter({
   const waypointIndexRef = useRef(0)
   const prevTargetRef = useRef<string>('')
   const isMovingRef = useRef(false)
+  const initializedRef = useRef(false)
 
   // Transition timer for sit/stand
   const transitionTimerRef = useRef(0)
@@ -108,6 +109,16 @@ export function AgentCharacter({
   const isOffline = agent.status === 'offline'
   const opacity = isOffline ? 0.35 : 1
   const atDesk = useMemo(() => isTargetAtDesk(targetPosition), [targetPosition])
+
+  // Set initial position only on first mount — never via JSX position prop
+  // which would reset position on every re-render and break walk animation
+  useEffect(() => {
+    if (groupRef.current && !initializedRef.current) {
+      groupRef.current.position.set(targetPosition[0], targetPosition[1], targetPosition[2])
+      prevTargetRef.current = targetPosition.join(',')
+      initializedRef.current = true
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const onPointerOver = useCallback((e: { stopPropagation: () => void }) => {
     e.stopPropagation()
@@ -169,7 +180,7 @@ export function AgentCharacter({
 
       const currentPos: [number, number, number] = [
         groupRef.current.position.x,
-        groupRef.current.position.y,
+        0,
         groupRef.current.position.z,
       ]
 
@@ -210,7 +221,7 @@ export function AgentCharacter({
     const isSitting = animStateRef.current === 'sitting_typing' ||
       animStateRef.current === 'sitting_idle' ||
       animStateRef.current === 'sitting_down'
-    const targetY = isSitting ? 0.08 : 0
+    const targetY = isSitting ? 0.05 : 0
     pos.y = THREE.MathUtils.lerp(pos.y, targetY, Math.min(dt * 6, 0.2))
 
     // Handle standing_up transition before walking
@@ -340,7 +351,6 @@ export function AgentCharacter({
   return (
     <group
       ref={groupRef}
-      position={targetPosition}
       onClick={(e) => {
         e.stopPropagation()
         onSelect?.(agent.id)
