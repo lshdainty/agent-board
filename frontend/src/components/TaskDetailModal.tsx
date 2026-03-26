@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
-import type { Task, TaskStatus, TaskPriority } from '@/types';
-import { X, User, Calendar, Clock, Flag, AlignLeft } from 'lucide-react';
+import type { Task, TaskStatus, TaskPriority, Agent } from '@/types';
+import { X, User, Calendar, Clock, Flag, AlignLeft, Pencil, Check } from 'lucide-react';
 import { format } from 'date-fns';
+import { useUpdateTask } from '@/hooks/useTasks';
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   todo: 'Todo',
@@ -12,6 +13,8 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
   done: 'Done',
 };
 
+const STATUS_OPTIONS: TaskStatus[] = ['todo', 'in_progress', 'review', 'done'];
+
 const PRIORITY_LABELS: Record<TaskPriority, string> = {
   low: 'Low',
   medium: 'Medium',
@@ -19,33 +22,93 @@ const PRIORITY_LABELS: Record<TaskPriority, string> = {
   urgent: 'Urgent',
 };
 
+const PRIORITY_OPTIONS: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
+
 interface TaskDetailModalProps {
   task: Task;
+  agents?: Agent[];
+  projectId?: number;
   onClose: () => void;
 }
 
-export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
+export function TaskDetailModal({ task, agents = [], onClose }: TaskDetailModalProps) {
+  const updateTask = useUpdateTask();
+
+  // Editable state
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [titleValue, setTitleValue] = useState(task.title);
+  const [descValue, setDescValue] = useState(task.description || '');
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const descInputRef = useRef<HTMLTextAreaElement>(null);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (editingTitle) { setEditingTitle(false); setTitleValue(task.title); return; }
+        if (editingDesc) { setEditingDesc(false); setDescValue(task.description || ''); return; }
+        onClose();
+      }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, editingTitle, editingDesc, task.title, task.description]);
 
-  // Prevent body scroll when modal is open
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
+    return () => { document.body.style.overflow = ''; };
   }, []);
+
+  useEffect(() => {
+    if (editingTitle && titleInputRef.current) titleInputRef.current.focus();
+  }, [editingTitle]);
+
+  useEffect(() => {
+    if (editingDesc && descInputRef.current) descInputRef.current.focus();
+  }, [editingDesc]);
 
   const formatDate = (dateStr: string) => {
     try {
       return format(new Date(dateStr), 'yyyy-MM-dd HH:mm');
     } catch {
       return dateStr;
+    }
+  };
+
+  const saveTitle = () => {
+    const trimmed = titleValue.trim();
+    if (trimmed && trimmed !== task.title) {
+      updateTask.mutate({ taskId: task.id, data: { title: trimmed } });
+    } else {
+      setTitleValue(task.title);
+    }
+    setEditingTitle(false);
+  };
+
+  const saveDescription = () => {
+    const trimmed = descValue.trim();
+    if (trimmed !== (task.description || '')) {
+      updateTask.mutate({ taskId: task.id, data: { description: trimmed || null } });
+    }
+    setEditingDesc(false);
+  };
+
+  const handleStatusChange = (status: TaskStatus) => {
+    if (status !== task.status) {
+      updateTask.mutate({ taskId: task.id, data: { status } });
+    }
+  };
+
+  const handlePriorityChange = (priority: TaskPriority) => {
+    if (priority !== task.priority) {
+      updateTask.mutate({ taskId: task.id, data: { priority } });
+    }
+  };
+
+  const handleAssigneeChange = (assigneeId: string) => {
+    const newId = assigneeId ? Number(assigneeId) : null;
+    if (newId !== task.assignee_id) {
+      updateTask.mutate({ taskId: task.id, data: { assignee_id: newId } });
     }
   };
 
@@ -69,9 +132,28 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-3 p-5 border-b border-[var(--color-border)]">
-          <h2 className="text-lg font-semibold text-[var(--color-card-foreground)] leading-snug flex-1">
-            {task.title}
-          </h2>
+          {editingTitle ? (
+            <div className="flex items-center gap-2 flex-1">
+              <input
+                ref={titleInputRef}
+                value={titleValue}
+                onChange={(e) => setTitleValue(e.target.value)}
+                onBlur={saveTitle}
+                onKeyDown={(e) => { if (e.key === 'Enter') saveTitle(); }}
+                className="flex-1 text-lg font-semibold text-[var(--color-card-foreground)] bg-[var(--color-background)] border border-[var(--color-border)] rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+              />
+              <button onClick={saveTitle} className="p-1 rounded text-green-500 hover:bg-green-500/10">
+                <Check size={16} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 flex-1 group cursor-pointer" onClick={() => setEditingTitle(true)}>
+              <h2 className="text-lg font-semibold text-[var(--color-card-foreground)] leading-snug flex-1">
+                {task.title}
+              </h2>
+              <Pencil size={14} className="text-[var(--color-muted-foreground)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+            </div>
+          )}
           <button
             onClick={onClose}
             className="shrink-0 p-1 rounded-md text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-muted)] transition-colors"
@@ -82,43 +164,43 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
-          {/* Status & Priority badges */}
+          {/* Status & Priority dropdowns */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
-              style={{
-                backgroundColor: `color-mix(in srgb, var(--color-status-${task.status.replace('_', '-')}) 20%, transparent)`,
-                color: `var(--color-status-${task.status.replace('_', '-')})`,
-              }}
+            <select
+              value={task.status}
+              onChange={(e) => handleStatusChange(e.target.value as TaskStatus)}
+              className="text-xs font-medium px-2.5 py-1 rounded-full border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-card-foreground)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
             >
-              <span
-                className="w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: `var(--color-status-${task.status.replace('_', '-')})` }}
-              />
-              {STATUS_LABELS[task.status]}
-            </span>
-            <span
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
-              style={{
-                backgroundColor: `color-mix(in srgb, var(--color-priority-${task.priority}) 20%, transparent)`,
-                color: `var(--color-priority-${task.priority})`,
-              }}
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+              ))}
+            </select>
+            <select
+              value={task.priority}
+              onChange={(e) => handlePriorityChange(e.target.value as TaskPriority)}
+              className="text-xs font-medium px-2.5 py-1 rounded-full border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-card-foreground)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
             >
-              <Flag size={10} />
-              {PRIORITY_LABELS[task.priority]}
-            </span>
+              {PRIORITY_OPTIONS.map((p) => (
+                <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
+              ))}
+            </select>
           </div>
 
-          {/* Assignee */}
-          {task.assignee_name && (
-            <div className="flex items-center gap-2">
-              <User size={14} className="text-[var(--color-muted-foreground)]" />
-              <span className="text-sm text-[var(--color-muted-foreground)]">Assignee:</span>
-              <span className="text-sm font-medium text-[var(--color-card-foreground)]">
-                {task.assignee_name}
-              </span>
-            </div>
-          )}
+          {/* Assignee dropdown */}
+          <div className="flex items-center gap-2">
+            <User size={14} className="text-[var(--color-muted-foreground)]" />
+            <span className="text-sm text-[var(--color-muted-foreground)]">Assignee:</span>
+            <select
+              value={task.assignee_id ?? ''}
+              onChange={(e) => handleAssigneeChange(e.target.value)}
+              className="text-sm font-medium text-[var(--color-card-foreground)] bg-[var(--color-background)] border border-[var(--color-border)] rounded-md px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+            >
+              <option value="">Unassigned</option>
+              {agents.map((a) => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
+          </div>
 
           {/* Created by */}
           {task.created_by_name && (
@@ -138,16 +220,54 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
               <span className="text-sm font-medium text-[var(--color-muted-foreground)]">
                 Description
               </span>
+              {!editingDesc && (
+                <button
+                  onClick={() => setEditingDesc(true)}
+                  className="ml-auto p-1 rounded text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-muted)] transition-colors"
+                >
+                  <Pencil size={12} />
+                </button>
+              )}
             </div>
-            {task.description ? (
-              <div className="rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] p-3">
+            {editingDesc ? (
+              <div className="space-y-2">
+                <textarea
+                  ref={descInputRef}
+                  value={descValue}
+                  onChange={(e) => setDescValue(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-card-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] resize-none"
+                />
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => { setEditingDesc(false); setDescValue(task.description || ''); }}
+                    className="px-3 py-1 text-xs rounded-md border border-[var(--color-border)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveDescription}
+                    className="px-3 py-1 text-xs rounded-md bg-[var(--color-primary)] text-white hover:opacity-90"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : task.description ? (
+              <div
+                className="rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] p-3 cursor-pointer hover:border-[var(--color-primary)] transition-colors"
+                onClick={() => setEditingDesc(true)}
+              >
                 <p className="text-sm text-[var(--color-card-foreground)] whitespace-pre-wrap leading-relaxed">
                   {task.description}
                 </p>
               </div>
             ) : (
-              <p className="text-sm text-[var(--color-muted-foreground)] italic">
-                No description provided.
+              <p
+                className="text-sm text-[var(--color-muted-foreground)] italic cursor-pointer hover:text-[var(--color-foreground)]"
+                onClick={() => setEditingDesc(true)}
+              >
+                Click to add description...
               </p>
             )}
           </div>

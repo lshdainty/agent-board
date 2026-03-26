@@ -2,6 +2,8 @@ import { useRef, useEffect, useState } from 'react';
 import { useAgents } from '@/hooks/useAgents';
 import { useSelectedAgent } from '@/hooks/useSelectedAgent';
 import { cn } from '@/lib/utils';
+import { Plus } from 'lucide-react';
+import { CreateAgentDialog } from './CreateAgentDialog';
 import type { Agent, AgentStatus } from '@/types';
 
 const STATUS_ORDER: AgentStatus[] = ['working', 'idle', 'offline'];
@@ -72,6 +74,7 @@ function AgentRow({ agent, isSelected, onToggle }: { agent: Agent; isSelected: b
 export function AgentListTab({ projectId }: AgentListTabProps) {
   const { data: agents = [] } = useAgents(projectId);
   const { selectedAgentId, toggleSelectedAgent } = useSelectedAgent();
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const grouped = STATUS_ORDER.reduce<Record<AgentStatus, Agent[]>>(
     (acc, status) => {
@@ -83,6 +86,15 @@ export function AgentListTab({ projectId }: AgentListTabProps) {
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Add Agent button */}
+      <button
+        onClick={() => setShowCreateDialog(true)}
+        className="flex items-center justify-center gap-1 w-full px-3 py-2 text-xs font-medium rounded-md border border-dashed border-[var(--color-border)] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:border-[var(--color-primary)] hover:bg-[var(--color-bg)] transition-colors"
+      >
+        <Plus size={14} />
+        Add Agent
+      </button>
+
       {STATUS_ORDER.map((status) => {
         const group = grouped[status];
         if (group.length === 0) return null;
@@ -108,6 +120,13 @@ export function AgentListTab({ projectId }: AgentListTabProps) {
         <p className="text-xs text-[var(--color-muted-foreground)] text-center py-4">
           No agents registered yet
         </p>
+      )}
+
+      {showCreateDialog && (
+        <CreateAgentDialog
+          projectId={projectId}
+          onClose={() => setShowCreateDialog(false)}
+        />
       )}
     </div>
   );

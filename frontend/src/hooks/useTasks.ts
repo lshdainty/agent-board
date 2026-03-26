@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import type { Task, TaskStatus, ApiResponse } from '@/types';
+import type { Task, TaskStatus, TaskPriority, ApiResponse } from '@/types';
 
 const api = axios.create({ baseURL: '/api' });
 
@@ -21,6 +21,49 @@ export function useUpdateTaskStatus() {
   return useMutation({
     mutationFn: async ({ taskId, status }: { taskId: number; status: TaskStatus }) => {
       const resp = await api.patch<ApiResponse<Task>>(`/tasks/${taskId}`, { status });
+      return resp.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+}
+
+export interface CreateTaskPayload {
+  project_id: number;
+  title: string;
+  description?: string;
+  priority?: TaskPriority;
+  assignee_id?: number | null;
+  status?: TaskStatus;
+}
+
+export function useCreateTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: CreateTaskPayload) => {
+      const resp = await api.post<ApiResponse<Task>>('/tasks', payload);
+      return resp.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+}
+
+export interface UpdateTaskPayload {
+  title?: string;
+  description?: string | null;
+  priority?: TaskPriority;
+  assignee_id?: number | null;
+  status?: TaskStatus;
+}
+
+export function useUpdateTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ taskId, data }: { taskId: number; data: UpdateTaskPayload }) => {
+      const resp = await api.patch<ApiResponse<Task>>(`/tasks/${taskId}`, data);
       return resp.data.data;
     },
     onSuccess: () => {

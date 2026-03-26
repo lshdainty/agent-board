@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { KanbanBoard } from '@/components/KanbanBoard';
 import { TabbedSidebar } from '@/components/sidebar/TabbedSidebar';
 import { OfficeView } from '@/components/office/OfficeView';
 import { useSocket } from '@/hooks/useSocket';
 import { SelectedAgentProvider } from '@/hooks/useSelectedAgent';
-import { LayoutDashboard, Building2, ChevronDown, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Building2, ChevronDown, Sun, Moon, Plus, Settings, X, Trash2 } from 'lucide-react';
 import axios from 'axios';
+import { createPortal } from 'react-dom';
+import { cn } from '@/lib/utils';
 import type { ApiResponse } from '@/types';
 
 interface Project {
@@ -37,6 +39,44 @@ function useProjects() {
   });
 }
 
+function useCreateProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { name: string; description?: string }) => {
+      const resp = await axios.post<ApiResponse<Project>>('/api/projects', payload);
+      return resp.data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+}
+
+function useUpdateProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, data }: { projectId: number; data: { name?: string; description?: string | null } }) => {
+      const resp = await axios.patch<ApiResponse<Project>>(`/api/projects/${projectId}`, data);
+      return resp.data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+}
+
+function useDeleteProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (projectId: number) => {
+      await axios.delete(`/api/projects/${projectId}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+}
+
 function useTheme() {
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem('theme') as Theme | null;
@@ -59,11 +99,228 @@ function useTheme() {
   return { theme, toggleTheme };
 }
 
+// ---- Project Create Dialog ----
+function CreateProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (id: number) => void }) {
+  const createProject = useCreateProject();
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    createProject.mutate(
+      { name: name.trim(), description: description.trim() || undefined },
+      { onSuccess: (project) => { onCreated(project.id); onClose(); } },
+    );
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className={cn(
+          'relative w-full max-w-sm rounded-xl border border-[var(--color-border)]',
+          'bg-[var(--color-card)] shadow-2xl',
+          'animate-in fade-in zoom-in-95 duration-200',
+        )}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-5 border-b border-[var(--color-border)]">
+          <h2 className="text-lg font-semibold text-[var(--color-card-foreground)]">New Project</h2>
+          <button onClick={onClose} className="p-1 rounded-md text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-muted)] transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-[var(--color-muted-foreground)] mb-1">
+              Name <span className="text-red-400">*</span>
+            </label>
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Project name"
+              className="w-full px-3 py-2 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-shadow"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-[var(--color-muted-foreground)] mb-1">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Optional description"
+              rows={2}
+              className="w-full px-3 py-2 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-shadow resize-none"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] transition-colors">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!name.trim() || createProject.isPending}
+              className="px-4 py-2 text-sm font-medium rounded-md bg-[var(--color-primary)] text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {createProject.isPending ? 'Creating...' : 'Create'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+// ---- Project Edit Dialog ----
+function EditProjectDialog({
+  project,
+  onClose,
+  onDeleted,
+}: {
+  project: Project;
+  onClose: () => void;
+  onDeleted: () => void;
+}) {
+  const updateProject = useUpdateProject();
+  const deleteProject = useDeleteProject();
+  const [name, setName] = useState(project.name);
+  const [description, setDescription] = useState(project.description || '');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    const data: { name?: string; description?: string | null } = {};
+    if (name.trim() !== project.name) data.name = name.trim();
+    if (description.trim() !== (project.description || '')) data.description = description.trim() || null;
+    if (Object.keys(data).length > 0) {
+      updateProject.mutate({ projectId: project.id, data }, { onSuccess: () => onClose() });
+    } else {
+      onClose();
+    }
+  };
+
+  const handleDelete = () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    deleteProject.mutate(project.id, {
+      onSuccess: () => { onDeleted(); onClose(); },
+    });
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className={cn(
+          'relative w-full max-w-sm rounded-xl border border-[var(--color-border)]',
+          'bg-[var(--color-card)] shadow-2xl',
+          'animate-in fade-in zoom-in-95 duration-200',
+        )}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-5 border-b border-[var(--color-border)]">
+          <h2 className="text-lg font-semibold text-[var(--color-card-foreground)]">Edit Project</h2>
+          <button onClick={onClose} className="p-1 rounded-md text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-muted)] transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-[var(--color-muted-foreground)] mb-1">
+              Name <span className="text-red-400">*</span>
+            </label>
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-shadow"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-[var(--color-muted-foreground)] mb-1">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              className="w-full px-3 py-2 text-sm rounded-md border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-shadow resize-none"
+            />
+          </div>
+
+          {confirmDelete && (
+            <div className="px-3 py-2 text-xs text-red-400 bg-red-500/10 rounded-lg border border-red-500/20">
+              This will permanently delete the project and all its data. Click Delete again to confirm.
+            </div>
+          )}
+
+          <div className="flex items-center justify-between pt-2">
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleteProject.isPending}
+              className={cn(
+                'flex items-center gap-1 px-3 py-2 text-sm rounded-md transition-colors',
+                confirmDelete
+                  ? 'bg-red-500 text-white hover:bg-red-600'
+                  : 'text-red-400 hover:bg-red-500/10',
+              )}
+            >
+              <Trash2 size={14} />
+              {deleteProject.isPending ? 'Deleting...' : 'Delete'}
+            </button>
+            <div className="flex gap-2">
+              <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] transition-colors">
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!name.trim() || updateProject.isPending}
+                className="px-4 py-2 text-sm font-medium rounded-md bg-[var(--color-primary)] text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {updateProject.isPending ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 function Dashboard() {
   const { data: projects } = useProjects();
   const [projectId, setProjectId] = useState<number>(1);
   const [activeView, setActiveView] = useState<ViewMode>('office');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [showEditProject, setShowEditProject] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useTheme();
   const { isConnected } = useSocket(projectId);
@@ -128,7 +385,7 @@ function Dashboard() {
           </div>
 
           {/* Project selector */}
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative flex items-center gap-1" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm bg-[var(--color-bg)] border border-[var(--color-border)] hover:border-[var(--color-primary)] transition-colors"
@@ -136,6 +393,15 @@ function Dashboard() {
               {currentProject?.name || 'Select Project'}
               <ChevronDown size={14} />
             </button>
+            {currentProject && (
+              <button
+                onClick={() => setShowEditProject(true)}
+                className="p-1.5 rounded-md text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-muted)] transition-colors"
+                title="Project settings"
+              >
+                <Settings size={14} />
+              </button>
+            )}
             {dropdownOpen && projects && (
               <div className="absolute top-full left-0 mt-1 w-56 rounded-md border border-[var(--color-border)] bg-[var(--color-card)] shadow-lg z-50">
                 {projects.map((p) => (
@@ -155,6 +421,19 @@ function Dashboard() {
                     )}
                   </button>
                 ))}
+                {/* New Project item at bottom */}
+                <div className="border-t border-[var(--color-border)]">
+                  <button
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      setShowCreateProject(true);
+                    }}
+                    className="w-full flex items-center gap-1.5 px-3 py-2 text-sm text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-bg)] transition-colors"
+                  >
+                    <Plus size={14} />
+                    New Project
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -187,6 +466,27 @@ function Dashboard() {
           <TabbedSidebar projectId={projectId} theme={theme} onToggleTheme={toggleTheme} />
         </aside>
       </div>
+
+      {/* Project dialogs */}
+      {showCreateProject && (
+        <CreateProjectDialog
+          onClose={() => setShowCreateProject(false)}
+          onCreated={(id) => setProjectId(id)}
+        />
+      )}
+      {showEditProject && currentProject && (
+        <EditProjectDialog
+          project={currentProject}
+          onClose={() => setShowEditProject(false)}
+          onDeleted={() => {
+            // After deletion, select first available project
+            if (projects && projects.length > 1) {
+              const remaining = projects.filter((p) => p.id !== currentProject.id);
+              if (remaining.length > 0) setProjectId(remaining[0].id);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

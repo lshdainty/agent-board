@@ -8,9 +8,10 @@ interface DeskProps {
   rotation?: number
   theme: 'light' | 'dark'
   agentStatus?: AgentStatus
+  hideChair?: boolean
 }
 
-export const Desk = memo(function Desk({ position, rotation = 0, theme, agentStatus }: DeskProps) {
+export const Desk = memo(function Desk({ position, rotation = 0, theme, agentStatus, hideChair = false }: DeskProps) {
   const isDark = theme === 'dark'
   const surface = isDark ? '#3a3f55' : '#c8a882'
   const leg = isDark ? '#2a2f45' : '#9e8268'
@@ -126,25 +127,27 @@ export const Desk = memo(function Desk({ position, rotation = 0, theme, agentSta
         <meshStandardMaterial color={keyboard} />
       </mesh>
 
-      {/* Chair */}
-      <group position={[0, 0, 0.55]}>
-        <mesh position={[0, 0.38, 0]} castShadow>
-          <cylinderGeometry args={[0.18, 0.18, 0.04, 12]} />
-          <meshStandardMaterial color={chair} />
-        </mesh>
-        <mesh position={[0, 0.55, -0.14]} castShadow>
-          <boxGeometry args={[0.3, 0.3, 0.03]} />
-          <meshStandardMaterial color={chair} />
-        </mesh>
-        <mesh position={[0, 0.2, 0]} castShadow>
-          <cylinderGeometry args={[0.03, 0.03, 0.36, 6]} />
-          <meshStandardMaterial color={chairBase} />
-        </mesh>
-        <mesh position={[0, 0.03, 0]} castShadow>
-          <cylinderGeometry args={[0.15, 0.15, 0.02, 12]} />
-          <meshStandardMaterial color={chairBase} />
-        </mesh>
-      </group>
+      {/* Chair — hidden when an agent is seated to prevent mesh clipping */}
+      {!hideChair && (
+        <group position={[0, 0, 0.55]}>
+          <mesh position={[0, 0.38, 0]} castShadow>
+            <cylinderGeometry args={[0.18, 0.18, 0.04, 12]} />
+            <meshStandardMaterial color={chair} />
+          </mesh>
+          <mesh position={[0, 0.55, -0.14]} castShadow>
+            <boxGeometry args={[0.3, 0.3, 0.03]} />
+            <meshStandardMaterial color={chair} />
+          </mesh>
+          <mesh position={[0, 0.2, 0]} castShadow>
+            <cylinderGeometry args={[0.03, 0.03, 0.36, 6]} />
+            <meshStandardMaterial color={chairBase} />
+          </mesh>
+          <mesh position={[0, 0.03, 0]} castShadow>
+            <cylinderGeometry args={[0.15, 0.15, 0.02, 12]} />
+            <meshStandardMaterial color={chairBase} />
+          </mesh>
+        </group>
+      )}
     </group>
   )
 })
