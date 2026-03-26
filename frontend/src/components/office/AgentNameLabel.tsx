@@ -102,25 +102,38 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
   })
 
   return (
-    <group position={[0, 1.6, 0]} ref={groupRef}>
+    <group position={[0, 1.8, 0]} ref={groupRef}>
       <Billboard follow lockX={false} lockY={false} lockZ={false}>
+        {/* Background panel for readability */}
+        <mesh position={[0, 0.02, -0.01]}>
+          <planeGeometry args={[1.2, 0.45]} />
+          <meshBasicMaterial
+            color={isDark ? '#0f172a' : '#ffffff'}
+            transparent
+            opacity={isDark ? 0.85 : 0.9}
+          />
+        </mesh>
+
         {/* Name */}
         <Text
-          position={[0, 0.15, 0]}
-          fontSize={0.16}
+          position={[0, 0.12, 0]}
+          fontSize={0.14}
           color={textColor}
           anchorX="center"
           anchorY="middle"
           font={undefined}
-          fontWeight="bold"
         >
           {name}
         </Text>
 
-        {/* Role + Status dot */}
+        {/* Status dot + Role */}
+        <mesh ref={dotRef} position={[-0.28, -0.08, 0]}>
+          <sphereGeometry args={[0.03, 8, 8]} />
+          <meshBasicMaterial color={STATUS_COLORS[status]} />
+        </mesh>
         <Text
-          position={[0.04, -0.05, 0]}
-          fontSize={0.08}
+          position={[0.05, -0.08, 0]}
+          fontSize={0.07}
           color={subColor}
           anchorX="center"
           anchorY="middle"
@@ -129,55 +142,49 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
           {role}
         </Text>
 
-        {/* Status dot */}
-        <mesh ref={dotRef} position={[-0.35, -0.05, 0]}>
-          <sphereGeometry args={[0.035, 8, 8]} />
-          <meshBasicMaterial color={STATUS_COLORS[status]} />
-        </mesh>
-
         {/* Working: typing dots animation */}
         {status === 'working' && (
-          <group ref={typingDotsRef} position={[0.30, -0.05, 0]}>
+          <group ref={typingDotsRef} position={[0.35, -0.08, 0]}>
             {[0, 1, 2].map((i) => (
-              <mesh key={i} position={[i * 0.05, 0, 0]}>
-                <sphereGeometry args={[0.02, 6, 6]} />
+              <mesh key={i} position={[i * 0.04, 0, 0]}>
+                <sphereGeometry args={[0.015, 6, 6]} />
                 <meshBasicMaterial color={STATUS_COLORS.working} transparent opacity={0.5} />
               </mesh>
             ))}
           </group>
         )}
 
-        {/* Idle/offline: emoji indicator */}
+        {/* Idle/offline: status text */}
         {(status === 'idle' || status === 'offline') && (
           <Text
-            position={[0.30, -0.05, 0]}
-            fontSize={0.08}
+            position={[0.35, -0.08, 0]}
+            fontSize={0.06}
             color={subColor}
             anchorX="center"
             anchorY="middle"
             font={undefined}
           >
-            {statusEmoji === 'coffee' ? 'coffee' : 'zzz'}
+            {status === 'idle' ? 'IDLE' : 'OFF'}
           </Text>
         )}
 
-        {/* Task title with pill background */}
+        {/* Task title */}
         {status === 'working' && taskTitle && (
-          <group position={[0, -0.18, 0]}>
-            <mesh ref={pillRef} position={[0, 0, -0.001]}>
-              <planeGeometry args={[Math.min(taskTitle.length * 0.06 + 0.2, 2.0), 0.14]} />
+          <group position={[0, -0.24, 0]}>
+            <mesh ref={pillRef} position={[0, 0, -0.01]}>
+              <planeGeometry args={[Math.min(taskTitle.length * 0.05 + 0.2, 1.4), 0.12]} />
               <meshBasicMaterial
                 color={isDark ? '#1e3a5f' : '#dbeafe'}
                 transparent
-                opacity={0.3}
+                opacity={0.4}
               />
             </mesh>
             <Text
-              fontSize={0.08}
+              fontSize={0.06}
               color={isDark ? '#93c5fd' : '#2563eb'}
               anchorX="center"
               anchorY="middle"
-              maxWidth={2.0}
+              maxWidth={1.4}
               font={undefined}
             >
               {taskTitle}
