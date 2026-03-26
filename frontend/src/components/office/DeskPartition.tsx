@@ -19,7 +19,7 @@ export const DeskPartition = memo(function DeskPartition({
   const trimColor = isDark ? '#8890a0' : '#374151'
 
   const panelThickness = 0.06
-  const panelHeight = 1.15  // floor to slightly above desk
+  const panelHeight = 0.85  // floor to just above desk surface
   const centerY = panelHeight / 2  // starts from floor (y=0)
 
   // Geometry dimensions based on direction
