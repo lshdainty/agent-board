@@ -312,15 +312,22 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
       <OfficeFloor theme={theme} />
       <OfficeWalls theme={theme} />
 
-      {/* Desks — all 12 slots */}
-      {DESK_SLOTS.map((slot, i) => (
-        <Desk
-          key={`desk-${i}`}
-          position={slot.position}
-          rotation={slot.rotation}
-          theme={theme}
-        />
-      ))}
+      {/* Desks — all 12 slots, hide chair when agent is seated */}
+      {DESK_SLOTS.map((slot, i) => {
+        // Check if any agent is seated at this desk
+        const seated = Array.from(agentPositions.values()).some(
+          (p) => p.zone === 'desk' && p.deskIndex === i
+        )
+        return (
+          <Desk
+            key={`desk-${i}`}
+            position={slot.position}
+            rotation={slot.rotation}
+            theme={theme}
+            hideChair={seated}
+          />
+        )
+      })}
 
       {/* Desk decorations — paper stacks and laptops on alternating desks */}
       {DESK_SLOTS.map((slot, i) => (
