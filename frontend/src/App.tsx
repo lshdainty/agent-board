@@ -415,7 +415,10 @@ function MobileSidebarSheet({
 
 function Dashboard() {
   const { data: projects } = useProjects();
-  const [projectId, setProjectId] = useState<number>(1);
+  const [projectId, setProjectId] = useState<number>(() => {
+    const saved = localStorage.getItem('selectedProjectId');
+    return saved ? Number(saved) : 1;
+  });
   const [activeView, setActiveView] = useState<ViewMode>('office');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showCreateProject, setShowCreateProject] = useState(false);
@@ -440,7 +443,12 @@ function Dashboard() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [dropdownOpen]);
 
-  // Auto-select first project when projects load
+  // Persist projectId to localStorage
+  useEffect(() => {
+    localStorage.setItem('selectedProjectId', String(projectId));
+  }, [projectId]);
+
+  // Auto-select first project when projects load (only if saved project doesn't exist)
   useEffect(() => {
     if (projects && projects.length > 0) {
       const exists = projects.some((p) => p.id === projectId);

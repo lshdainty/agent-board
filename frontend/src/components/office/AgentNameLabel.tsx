@@ -106,7 +106,7 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
       <Billboard follow lockX={false} lockY={false} lockZ={false}>
         {/* Background panel for readability */}
         <mesh position={[0, 0.02, -0.01]}>
-          <planeGeometry args={[1.2, 0.45]} />
+          <planeGeometry args={[Math.max(name.length * 0.09 + 0.3, role.length * 0.055 + 0.3, 0.6), 0.45]} />
           <meshBasicMaterial
             color={isDark ? '#0f172a' : '#ffffff'}
             transparent

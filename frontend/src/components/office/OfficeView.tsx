@@ -114,18 +114,10 @@ export function OfficeView({ projectId, theme }: OfficeViewProps) {
   const { data: agents = [], isLoading: agentsLoading } = useAgents(projectId)
   const { data: tasks = [], isLoading: tasksLoading } = useTasks(projectId)
   const bg = BG[theme]
-
-  // Show loading spinner while data is loading
-  if (agentsLoading || tasksLoading) {
-    return (
-      <div style={{ width: '100%', height: '100%', background: bg, borderRadius: '12px', overflow: 'hidden' }}>
-        <SceneLoadingFallback theme={theme} />
-      </div>
-    )
-  }
+  const isLoading = agentsLoading || tasksLoading
 
   return (
-    <div style={{ width: '100%', height: '100%', background: bg, borderRadius: '12px', overflow: 'hidden' }}>
+    <div style={{ width: '100%', height: '100%', background: bg, borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
       <Scene3DErrorBoundary>
         <Canvas
           shadows
@@ -138,10 +130,39 @@ export function OfficeView({ projectId, theme }: OfficeViewProps) {
           }}
         >
           <Suspense fallback={null}>
-            <OfficeScene agents={agents} tasks={tasks} theme={theme} />
+            {!isLoading && <OfficeScene agents={agents} tasks={tasks} theme={theme} />}
           </Suspense>
         </Canvas>
       </Scene3DErrorBoundary>
+
+      {/* Loading overlay */}
+      {isLoading && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: '12px',
+          fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+          color: theme === 'dark' ? '#94a3b8' : '#64748b',
+          zIndex: 10,
+        }}>
+          <div style={{
+            width: '32px',
+            height: '32px',
+            border: `3px solid ${theme === 'dark' ? '#1e293b' : '#cbd5e1'}`,
+            borderTopColor: '#3b82f6',
+            borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite',
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <div style={{ fontSize: '13px', fontWeight: 500 }}>
+            Loading...
+          </div>
+        </div>
+      )}
 
       <div
         style={{
