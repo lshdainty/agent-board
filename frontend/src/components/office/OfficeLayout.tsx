@@ -1,4 +1,6 @@
-import { useMemo, memo } from 'react'
+import { useMemo, useRef, memo } from 'react'
+import { useFrame } from '@react-three/fiber'
+import * as THREE from 'three'
 import { OfficeFloor } from './OfficeFloor'
 import { OfficeWalls } from './OfficeWalls'
 import { Desk } from './Desk'
@@ -7,7 +9,7 @@ import { MeetingTable } from './MeetingTable'
 import { Bookshelf } from './Bookshelf'
 import { CoffeeArea } from './CoffeeArea'
 import { AgentCharacter } from './AgentCharacter'
-import { DESK_SLOTS, MEETING_CENTER, COFFEE_AREA } from '@/constants/office'
+import { DESK_SLOTS, MEETING_CENTER, COFFEE_AREA, ROOM_WIDTH, ROOM_DEPTH } from '@/constants/office'
 import { useSelectedAgent } from '@/hooks/useSelectedAgent'
 import { useAgentPositions } from '@/hooks/useAgentPositions'
 import type { Agent, Task } from '@/types'
@@ -143,8 +145,155 @@ const Laptop = memo(function Laptop({
   )
 })
 
+// Selection highlight ring under the selected agent
+function SelectionRing({ position }: { position: [number, number, number] }) {
+  const matRef = useRef<THREE.MeshBasicMaterial>(null)
+
+  useFrame((state) => {
+    if (!matRef.current) return
+    const t = state.clock.getElapsedTime()
+    matRef.current.opacity = 0.35 + Math.sin(t * 3) * 0.2
+  })
+
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[position[0], 0.01, position[2]]}>
+      <ringGeometry args={[0.28, 0.38, 32]} />
+      <meshBasicMaterial
+        ref={matRef}
+        color="#3b82f6"
+        transparent
+        opacity={0.5}
+        side={THREE.DoubleSide}
+      />
+    </mesh>
+  )
+}
+
+// Wall clock with live hour/minute hands
+const WallClock = memo(function WallClock({
+  position,
+  rotation = 0,
+}: {
+  position: [number, number, number]
+  rotation?: number
+}) {
+  const minuteRef = useRef<THREE.Group>(null)
+  const hourRef = useRef<THREE.Group>(null)
+
+  useFrame(() => {
+    const now = new Date()
+    const minutes = now.getMinutes() + now.getSeconds() / 60
+    const hours = (now.getHours() % 12) + minutes / 60
+
+    const minuteAngle = -(minutes / 60) * Math.PI * 2
+    const hourAngle = -(hours / 12) * Math.PI * 2
+
+    if (minuteRef.current) minuteRef.current.rotation.z = minuteAngle
+    if (hourRef.current) hourRef.current.rotation.z = hourAngle
+  })
+
+  return (
+    <group position={position} rotation={[0, rotation, 0]}>
+      {/* Clock face */}
+      <mesh>
+        <circleGeometry args={[0.35, 32]} />
+        <meshStandardMaterial color="#f0f0f0" />
+      </mesh>
+      {/* Clock rim */}
+      <mesh position={[0, 0, -0.01]}>
+        <ringGeometry args={[0.34, 0.38, 32]} />
+        <meshStandardMaterial color="#333333" />
+      </mesh>
+      {/* Hour marks */}
+      {Array.from({ length: 12 }).map((_, i) => {
+        const angle = (i / 12) * Math.PI * 2
+        const x = Math.sin(angle) * 0.28
+        const y = Math.cos(angle) * 0.28
+        return (
+          <mesh key={i} position={[x, y, 0.005]}>
+            <boxGeometry args={[0.02, 0.06, 0.005]} />
+            <meshStandardMaterial color="#333333" />
+          </mesh>
+        )
+      })}
+      {/* Minute hand — pivot at base (offset geometry upward) */}
+      <group ref={minuteRef} position={[0, 0, 0.01]}>
+        <mesh position={[0, 0.12, 0]}>
+          <boxGeometry args={[0.015, 0.26, 0.005]} />
+          <meshStandardMaterial color="#1a1a1a" />
+        </mesh>
+      </group>
+      {/* Hour hand — pivot at base (offset geometry upward) */}
+      <group ref={hourRef} position={[0, 0, 0.015]}>
+        <mesh position={[0, 0.08, 0]}>
+          <boxGeometry args={[0.022, 0.18, 0.005]} />
+          <meshStandardMaterial color="#1a1a1a" />
+        </mesh>
+      </group>
+      {/* Center dot */}
+      <mesh position={[0, 0, 0.02]}>
+        <circleGeometry args={[0.025, 16]} />
+        <meshStandardMaterial color="#ef4444" />
+      </mesh>
+    </group>
+  )
+})
+
+// Window frame on side walls
+const WindowFrame = memo(function WindowFrame({
+  position,
+  rotation = 0,
+}: {
+  position: [number, number, number]
+  rotation?: number
+}) {
+  return (
+    <group position={position} rotation={[0, rotation, 0]}>
+      {/* Sky / outside glow */}
+      <mesh position={[0, 0, 0.01]}>
+        <boxGeometry args={[1.2, 1.0, 0.02]} />
+        <meshStandardMaterial
+          color="#87ceeb"
+          emissive="#87ceeb"
+          emissiveIntensity={0.3}
+        />
+      </mesh>
+      {/* Frame - top */}
+      <mesh position={[0, 0.53, 0.02]}>
+        <boxGeometry args={[1.3, 0.06, 0.04]} />
+        <meshStandardMaterial color="#555566" />
+      </mesh>
+      {/* Frame - bottom */}
+      <mesh position={[0, -0.53, 0.02]}>
+        <boxGeometry args={[1.3, 0.06, 0.04]} />
+        <meshStandardMaterial color="#555566" />
+      </mesh>
+      {/* Frame - left */}
+      <mesh position={[-0.63, 0, 0.02]}>
+        <boxGeometry args={[0.06, 1.12, 0.04]} />
+        <meshStandardMaterial color="#555566" />
+      </mesh>
+      {/* Frame - right */}
+      <mesh position={[0.63, 0, 0.02]}>
+        <boxGeometry args={[0.06, 1.12, 0.04]} />
+        <meshStandardMaterial color="#555566" />
+      </mesh>
+      {/* Cross divider - horizontal */}
+      <mesh position={[0, 0, 0.025]}>
+        <boxGeometry args={[1.2, 0.03, 0.02]} />
+        <meshStandardMaterial color="#555566" />
+      </mesh>
+      {/* Cross divider - vertical */}
+      <mesh position={[0, 0, 0.025]}>
+        <boxGeometry args={[0.03, 1.0, 0.02]} />
+        <meshStandardMaterial color="#555566" />
+      </mesh>
+    </group>
+  )
+})
+
 export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
-  const { toggleSelectedAgent } = useSelectedAgent()
+  const { selectedAgentId, toggleSelectedAgent } = useSelectedAgent()
   const agentPositions = useAgentPositions(agents, tasks)
 
   // Map agent to their current in_progress task
@@ -224,6 +373,17 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
       <Plant position={[9, 0, 5.5]} />
       <Whiteboard position={[4, 0, -5]} rotation={0} />
 
+      {/* Wall clock on back wall */}
+      <WallClock position={[0, 3.0, -ROOM_DEPTH / 2 + 0.1]} rotation={0} />
+
+      {/* Windows on left wall */}
+      <WindowFrame position={[-ROOM_WIDTH / 2 + 0.1, 2.2, -3]} rotation={Math.PI / 2} />
+      <WindowFrame position={[-ROOM_WIDTH / 2 + 0.1, 2.2, 1]} rotation={Math.PI / 2} />
+
+      {/* Windows on right wall */}
+      <WindowFrame position={[ROOM_WIDTH / 2 - 0.1, 2.2, -3]} rotation={-Math.PI / 2} />
+      <WindowFrame position={[ROOM_WIDTH / 2 - 0.1, 2.2, 1]} rotation={-Math.PI / 2} />
+
       {/* All agents — position driven by useAgentPositions hook */}
       {agents.map((agent) => {
         const pos = agentPositions.get(agent.id)
@@ -240,6 +400,13 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
           />
         )
       })}
+
+      {/* Selection highlight ring under the selected agent */}
+      {selectedAgentId != null && (() => {
+        const pos = agentPositions.get(selectedAgentId)
+        if (!pos) return null
+        return <SelectionRing position={pos.targetPosition} />
+      })()}
     </group>
   )
 }

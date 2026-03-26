@@ -49,6 +49,8 @@ const occupancyGrid = buildOccupancyGrid(
 const MOVE_SPEED = 1.8 // units per second
 const ARRIVE_THRESHOLD = 0.08
 const TRANSITION_DURATION = 0.5 // seconds for sit/stand transitions
+// Chair seat height: chair group at y=0, seat cylinder center at y=0.38, half-height 0.02 → top = 0.40
+const CHAIR_SEAT_Y = 0.40
 
 // Determine what zone an agent is in based on status
 function getTargetAnimState(
@@ -206,11 +208,24 @@ export function AgentCharacter({
     const waypoints = waypointsRef.current
     const wpIdx = waypointIndexRef.current
 
+    // ------ CHAIR HEIGHT: raise/lower group y for sitting ------
+    const isSitting =
+      animStateRef.current === 'sitting_down' ||
+      animStateRef.current === 'sitting_typing' ||
+      animStateRef.current === 'sitting_idle'
+    const isStandingUp = animStateRef.current === 'standing_up'
+    if (isSitting) {
+      pos.y = THREE.MathUtils.lerp(pos.y, CHAIR_SEAT_Y, Math.min(dt * 5, 0.15))
+    } else if (isStandingUp) {
+      pos.y = THREE.MathUtils.lerp(pos.y, 0, Math.min(dt * 5, 0.15))
+    }
+
     // Handle standing_up transition before walking
     if (animStateRef.current === 'standing_up') {
       transitionTimerRef.current += dt
       if (transitionTimerRef.current >= TRANSITION_DURATION) {
         // Transition complete — start walking if we need to move
+        pos.y = 0 // ensure we're back on the ground
         if (isMovingRef.current) {
           animStateRef.current = 'walking'
         } else {
@@ -236,9 +251,8 @@ export function AgentCharacter({
 
     if (isMovingRef.current && waypoints.length > 0 && wpIdx < waypoints.length) {
       const wp = waypoints[wpIdx]
-      const wpVec = new THREE.Vector3(wp[0], wp[1], wp[2])
-      const dir = wpVec.clone().sub(pos)
-      dir.y = 0
+      const wpVec = new THREE.Vector3(wp[0], 0, wp[2])
+      const dir = wpVec.clone().sub(new THREE.Vector3(pos.x, 0, pos.z))
       const dist = dir.length()
 
       if (dist < ARRIVE_THRESHOLD) {
@@ -247,7 +261,7 @@ export function AgentCharacter({
         if (waypointIndexRef.current >= waypoints.length) {
           // Arrived at final destination
           isMovingRef.current = false
-          pos.set(wp[0], wp[1], wp[2])
+          pos.set(wp[0], 0, wp[2])
 
           // Start sitting down if destination is a desk
           if (atDesk) {
@@ -261,7 +275,9 @@ export function AgentCharacter({
         // Move toward waypoint
         const step = Math.min(MOVE_SPEED * dt, dist)
         dir.normalize().multiplyScalar(step)
-        pos.add(dir)
+        pos.x += dir.x
+        pos.z += dir.z
+        pos.y = 0 // stay on ground while walking
 
         // Rotate character toward movement direction
         const targetAngle = Math.atan2(dir.x, dir.z)
@@ -279,10 +295,12 @@ export function AgentCharacter({
       // Not moving — at destination
       isMovingRef.current = false
 
-      // Snap to target position smoothly
-      const targetVec = new THREE.Vector3(...targetPosition)
-      if (pos.distanceTo(targetVec) > 0.01) {
-        pos.lerp(targetVec, Math.min(dt * 4, 0.1))
+      // Snap to target xz position smoothly (y handled by chair height logic)
+      const dx = targetPosition[0] - pos.x
+      const dz = targetPosition[2] - pos.z
+      if (Math.abs(dx) > 0.01 || Math.abs(dz) > 0.01) {
+        pos.x = THREE.MathUtils.lerp(pos.x, targetPosition[0], Math.min(dt * 4, 0.1))
+        pos.z = THREE.MathUtils.lerp(pos.z, targetPosition[2], Math.min(dt * 4, 0.1))
       }
 
       // Face forward (reset rotation) when idle at destination

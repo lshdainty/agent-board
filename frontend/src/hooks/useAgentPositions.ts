@@ -12,10 +12,12 @@ function getDeskIndex(agentId: number): number {
 
 /**
  * Chair position for a given desk slot (offset from desk toward the agent's seat).
+ * y stays at 0 for pathfinding; the character is raised to seat height
+ * via the sitting animation in AgentCharacter.
  */
 function deskChairPosition(slotIndex: number): [number, number, number] {
   const slot = DESK_SLOTS[slotIndex]
-  return [slot.position[0], slot.position[1], slot.position[2] + 0.55]
+  return [slot.position[0], 0, slot.position[2] + 0.55]
 }
 
 /**
