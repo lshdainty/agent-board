@@ -329,22 +329,22 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
         )
       })}
 
-      {/* Desk decorations — paper stacks and laptops on alternating desks */}
+      {/* Desk decorations — paper stacks and laptops on desk surface (y=0.575) */}
       {DESK_SLOTS.map((slot, i) => (
         <group key={`desk-decor-${i}`}>
           {/* Paper stack on right side of desk */}
           <PaperStack
             position={[
               slot.position[0] + 0.35,
-              slot.position[1] + 0.76,
+              0.575,
               slot.position[2] - 0.05,
             ]}
           />
-          {/* Laptop on center of desk */}
+          {/* Laptop on left-center of desk */}
           <Laptop
             position={[
-              slot.position[0] - 0.05,
-              slot.position[1] + 0.76,
+              slot.position[0] - 0.25,
+              0.575,
               slot.position[2] + 0.05,
             ]}
           />
