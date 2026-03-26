@@ -1,5 +1,5 @@
 import { useRef, useMemo } from 'react'
-import { Text, Billboard } from '@react-three/drei'
+import { Text, Billboard, RoundedBox } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { AgentStatus } from '@/types'
@@ -13,7 +13,7 @@ interface AgentNameLabelProps {
 }
 
 const STATUS_COLORS: Record<AgentStatus, string> = {
-  working: '#3b82f6',
+  working: '#f59e0b',
   idle: '#22c55e',
   offline: '#64748b',
 }
@@ -104,20 +104,29 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
   return (
     <group position={[0, 1.8, 0]} ref={groupRef}>
       <Billboard follow lockX={false} lockY={false} lockZ={false}>
-        {/* Background panel for readability */}
-        <mesh position={[0, -0.02, -0.01]}>
-          <planeGeometry args={[Math.max(name.length * 0.12 + 0.4, role.length * 0.07 + 0.4, 0.8), 0.55]} />
-          <meshBasicMaterial
-            color={isDark ? '#0f172a' : '#ffffff'}
-            transparent
-            opacity={isDark ? 0.85 : 0.9}
-          />
-        </mesh>
+        {/* Background — rounded box */}
+        {(() => {
+          const bgW = Math.max(name.length * 0.10 + 0.2, role.length * 0.06 + 0.2, 0.7)
+          return (
+            <RoundedBox
+              args={[bgW, 0.38, 0.02]}
+              radius={0.04}
+              smoothness={4}
+              position={[0, 0, -0.01]}
+            >
+              <meshBasicMaterial
+                color={isDark ? '#1e293b' : '#ffffff'}
+                transparent
+                opacity={isDark ? 0.92 : 0.95}
+              />
+            </RoundedBox>
+          )
+        })()}
 
         {/* Name */}
         <Text
-          position={[0, 0.12, 0]}
-          fontSize={0.14}
+          position={[0, 0.1, 0]}
+          fontSize={0.11}
           color={textColor}
           anchorX="center"
           anchorY="middle"
@@ -126,10 +135,10 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
           {name}
         </Text>
 
-        {/* Role — second line */}
+        {/* Role */}
         <Text
-          position={[0, -0.06, 0]}
-          fontSize={0.07}
+          position={[0, -0.02, 0]}
+          fontSize={0.06}
           color={subColor}
           anchorX="center"
           anchorY="middle"
@@ -138,14 +147,14 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
           {role}
         </Text>
 
-        {/* Status row — third line: dot + status label + typing dots */}
-        <mesh ref={dotRef} position={[-0.12, -0.17, 0]}>
-          <sphereGeometry args={[0.025, 8, 8]} />
+        {/* Status: dot + label */}
+        <mesh ref={dotRef} position={[-0.10, -0.12, 0]}>
+          <sphereGeometry args={[0.02, 8, 8]} />
           <meshBasicMaterial color={STATUS_COLORS[status]} />
         </mesh>
         <Text
-          position={[0.05, -0.17, 0]}
-          fontSize={0.055}
+          position={[0.04, -0.12, 0]}
+          fontSize={0.045}
           color={STATUS_COLORS[status]}
           anchorX="center"
           anchorY="middle"
@@ -154,12 +163,12 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
           {status === 'working' ? 'Working' : status === 'idle' ? 'Idle' : 'Offline'}
         </Text>
 
-        {/* Working: typing dots animation */}
+        {/* Working: typing dots */}
         {status === 'working' && (
-          <group ref={typingDotsRef} position={[0.22, -0.17, 0]}>
+          <group ref={typingDotsRef} position={[0.18, -0.12, 0]}>
             {[0, 1, 2].map((i) => (
-              <mesh key={i} position={[i * 0.04, 0, 0]}>
-                <sphereGeometry args={[0.015, 6, 6]} />
+              <mesh key={i} position={[i * 0.035, 0, 0]}>
+                <sphereGeometry args={[0.012, 6, 6]} />
                 <meshBasicMaterial color={STATUS_COLORS.working} transparent opacity={0.5} />
               </mesh>
             ))}

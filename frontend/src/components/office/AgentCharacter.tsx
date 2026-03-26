@@ -25,7 +25,7 @@ interface AgentCharacterProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  working: '#3b82f6',
+  working: '#f59e0b',
   idle: '#22c55e',
   offline: '#64748b',
 }
