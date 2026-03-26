@@ -142,7 +142,7 @@ export function useAgentPositions(
         targetPosition: target,
         previousPosition: prev,
         zone,
-        animation: zone === 'meeting' ? 'sitting_idle' : 'standing_idle',
+        animation: (zone === 'meeting' || zone === 'coffee') ? 'sitting_idle' : 'standing_idle',
       })
 
       lastKnownPositionRef.current.set(agent.id, target)
