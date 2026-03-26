@@ -47,22 +47,22 @@ const REST = {
 
 // Seated pose — absolute positions (group y stays at 0).
 // Chair seat top = 0.40. Character sits ON the seat surface.
-// Key: legs hang down from seat edge with knees at 90°, feet on floor.
-// The character's body is positioned ABOVE the chair, never intersecting it.
+// The whole character is raised so butt is at seat level.
+// Legs hang straight down from seat, feet visible above floor.
 const SEATED = {
-  torso:     { pos: [0, 0.58, 0],            rot: [-0.05, 0, 0] },
-  head:      { pos: [0, 0.85, 0.01],         rot: [-0.1, 0, 0] },
-  hairGroup: { pos: [0, 0.99, 0.01],         rot: [-0.1, 0, 0] },
-  eyeL:      { pos: [-0.04, 0.87, 0.13],     rot: [0, 0, 0] },
-  eyeR:      { pos: [0.04, 0.87, 0.13],      rot: [0, 0, 0] },
-  armL:      { pos: [-0.22, 0.55, 0.1],      rot: [-0.6, 0, 0] },
-  armR:      { pos: [0.22, 0.55, 0.1],       rot: [-0.6, 0, 0] },
-  handL:     { pos: [-0.15, 0.46, 0.2],      rot: [-0.4, 0, 0] },
-  handR:     { pos: [0.15, 0.46, 0.2],       rot: [-0.4, 0, 0] },
-  legL:      { pos: [-0.07, 0.22, 0.15],     rot: [0, 0, 0] },
-  legR:      { pos: [0.07, 0.22, 0.15],      rot: [0, 0, 0] },
-  shoeL:     { pos: [-0.07, 0.04, 0.15],     rot: [0, 0, 0] },
-  shoeR:     { pos: [0.07, 0.04, 0.15],      rot: [0, 0, 0] },
+  torso:     { pos: [0, 0.62, 0],            rot: [-0.05, 0, 0] },
+  head:      { pos: [0, 0.88, 0.01],         rot: [-0.1, 0, 0] },
+  hairGroup: { pos: [0, 1.02, 0.01],         rot: [-0.1, 0, 0] },
+  eyeL:      { pos: [-0.04, 0.90, 0.13],     rot: [0, 0, 0] },
+  eyeR:      { pos: [0.04, 0.90, 0.13],      rot: [0, 0, 0] },
+  armL:      { pos: [-0.22, 0.58, 0.1],      rot: [-0.6, 0, 0] },
+  armR:      { pos: [0.22, 0.58, 0.1],       rot: [-0.6, 0, 0] },
+  handL:     { pos: [-0.15, 0.50, 0.2],      rot: [-0.4, 0, 0] },
+  handR:     { pos: [0.15, 0.50, 0.2],       rot: [-0.4, 0, 0] },
+  legL:      { pos: [-0.07, 0.30, 0.12],     rot: [0, 0, 0] },
+  legR:      { pos: [0.07, 0.30, 0.12],      rot: [0, 0, 0] },
+  shoeL:     { pos: [-0.07, 0.10, 0.12],     rot: [0, 0, 0] },
+  shoeR:     { pos: [0.07, 0.10, 0.12],      rot: [0, 0, 0] },
 } as const
 
 // ---------------------------------------------------------------------------
