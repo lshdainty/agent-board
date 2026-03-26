@@ -46,7 +46,7 @@ const occupancyGrid = buildOccupancyGrid(
   obstacles,
 )
 
-const MOVE_SPEED = 1.8 // units per second
+const MOVE_SPEED = 0.8 // units per second
 const ARRIVE_THRESHOLD = 0.08
 const TRANSITION_DURATION = 0.5 // seconds for sit/stand transitions
 
