@@ -316,11 +316,11 @@ export function AgentCharacter({
           animStateRef.current = targetAnim
         }
 
-        // Reset rotation toward desk (face z+ direction) when at desk
+        // Face toward monitor (-z direction) when at desk
         if (atDesk) {
           groupRef.current.rotation.y = THREE.MathUtils.lerp(
             groupRef.current.rotation.y,
-            0,
+            Math.PI,
             Math.min(dt * 3, 0.1),
           )
         } else {
