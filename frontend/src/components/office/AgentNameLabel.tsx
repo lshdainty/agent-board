@@ -106,13 +106,13 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
       <Billboard follow lockX={false} lockY={false} lockZ={false}>
         {/* Background — rounded box */}
         {(() => {
-          const bgW = Math.max(name.length * 0.10 + 0.2, role.length * 0.06 + 0.2, 0.7)
+          const bgW = Math.max(name.length * 0.14 + 0.3, role.length * 0.09 + 0.3, 1.0)
           return (
             <RoundedBox
-              args={[bgW, 0.38, 0.02]}
-              radius={0.04}
+              args={[bgW, 0.55, 0.02]}
+              radius={0.06}
               smoothness={4}
-              position={[0, 0, -0.01]}
+              position={[0, 0.02, -0.01]}
             >
               <meshBasicMaterial
                 color={isDark ? '#1e293b' : '#ffffff'}
@@ -123,10 +123,10 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
           )
         })()}
 
-        {/* Name */}
+        {/* Name — large and bold */}
         <Text
-          position={[0, 0.1, 0]}
-          fontSize={0.11}
+          position={[0, 0.15, 0]}
+          fontSize={0.16}
           color={textColor}
           anchorX="center"
           anchorY="middle"
@@ -137,8 +137,8 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
 
         {/* Role */}
         <Text
-          position={[0, -0.02, 0]}
-          fontSize={0.06}
+          position={[0, 0, 0]}
+          fontSize={0.09}
           color={subColor}
           anchorX="center"
           anchorY="middle"
@@ -147,14 +147,14 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
           {role}
         </Text>
 
-        {/* Status: dot + label */}
-        <mesh ref={dotRef} position={[-0.10, -0.12, 0]}>
-          <sphereGeometry args={[0.02, 8, 8]} />
+        {/* Status: dot + label — clearly visible */}
+        <mesh ref={dotRef} position={[-0.14, -0.14, 0]}>
+          <sphereGeometry args={[0.03, 8, 8]} />
           <meshBasicMaterial color={STATUS_COLORS[status]} />
         </mesh>
         <Text
-          position={[0.04, -0.12, 0]}
-          fontSize={0.045}
+          position={[0.05, -0.14, 0]}
+          fontSize={0.08}
           color={STATUS_COLORS[status]}
           anchorX="center"
           anchorY="middle"
@@ -165,11 +165,11 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
 
         {/* Working: typing dots */}
         {status === 'working' && (
-          <group ref={typingDotsRef} position={[0.18, -0.12, 0]}>
+          <group ref={typingDotsRef} position={[0.28, -0.14, 0]}>
             {[0, 1, 2].map((i) => (
-              <mesh key={i} position={[i * 0.035, 0, 0]}>
-                <sphereGeometry args={[0.012, 6, 6]} />
-                <meshBasicMaterial color={STATUS_COLORS.working} transparent opacity={0.5} />
+              <mesh key={i} position={[i * 0.045, 0, 0]}>
+                <sphereGeometry args={[0.018, 6, 6]} />
+                <meshBasicMaterial color={STATUS_COLORS.working} transparent opacity={0.6} />
               </mesh>
             ))}
           </group>
