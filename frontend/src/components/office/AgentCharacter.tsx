@@ -206,8 +206,12 @@ export function AgentCharacter({
     const waypoints = waypointsRef.current
     const wpIdx = waypointIndexRef.current
 
-    // Group y always stays at 0 — seated height is handled by SEATED pose coordinates
-    pos.y = 0
+    // Raise group when sitting so character sits ON the chair seat (top = 0.40)
+    const isSitting = animStateRef.current === 'sitting_typing' ||
+      animStateRef.current === 'sitting_idle' ||
+      animStateRef.current === 'sitting_down'
+    const targetY = isSitting ? 0.30 : 0
+    pos.y = THREE.MathUtils.lerp(pos.y, targetY, Math.min(dt * 6, 0.2))
 
     // Handle standing_up transition before walking
     if (animStateRef.current === 'standing_up') {
