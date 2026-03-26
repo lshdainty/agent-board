@@ -420,7 +420,7 @@ export function AgentCharacter({
       </mesh>
 
       {/* Hair */}
-      <group ref={refs.hairGroup} position={[0, 0.84, 0]}>
+      <group ref={refs.hairGroup} position={[0, 0.72, 0]}>
         <AgentHair
           style={appearance.hairStyle}
           color={appearance.hairColor}
