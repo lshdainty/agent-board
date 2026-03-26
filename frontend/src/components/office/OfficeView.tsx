@@ -11,9 +11,40 @@ interface OfficeViewProps {
 
 const BG = { light: '#e8ecf4', dark: '#080c18' } as const
 
+// Loading spinner for 3D scene
+function SceneLoadingFallback({ theme }: { theme: 'light' | 'dark' }) {
+  const color = theme === 'dark' ? '#94a3b8' : '#64748b'
+  return (
+    <div style={{
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'column',
+      gap: '12px',
+      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+      color,
+    }}>
+      <div style={{
+        width: '32px',
+        height: '32px',
+        border: `3px solid ${theme === 'dark' ? '#1e293b' : '#cbd5e1'}`,
+        borderTopColor: '#3b82f6',
+        borderRadius: '50%',
+        animation: 'spin 0.8s linear infinite',
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ fontSize: '13px', fontWeight: 500 }}>
+        Loading 3D scene...
+      </div>
+    </div>
+  )
+}
+
 // Error boundary to catch 3D rendering errors
 class Scene3DErrorBoundary extends Component<
-  { children: ReactNode },
+  { children: ReactNode; onRetry?: () => void },
   { error: Error | null }
 > {
   state = { error: null as Error | null }
@@ -40,12 +71,23 @@ class Scene3DErrorBoundary extends Component<
           fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
           color: '#94a3b8',
         }}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
           <div style={{ fontSize: '14px', fontWeight: 500 }}>
-            3D 렌더링 오류가 발생했습니다. 새로고침해주세요.
+            3D rendering error
           </div>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              this.setState({ error: null })
+              window.location.reload()
+            }}
             style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
               padding: '6px 16px',
               fontSize: '13px',
               borderRadius: '6px',
@@ -55,7 +97,11 @@ class Scene3DErrorBoundary extends Component<
               cursor: 'pointer',
             }}
           >
-            새로고침
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
+            Retry
           </button>
         </div>
       )
@@ -65,9 +111,18 @@ class Scene3DErrorBoundary extends Component<
 }
 
 export function OfficeView({ projectId, theme }: OfficeViewProps) {
-  const { data: agents = [] } = useAgents(projectId)
-  const { data: tasks = [] } = useTasks(projectId)
+  const { data: agents = [], isLoading: agentsLoading } = useAgents(projectId)
+  const { data: tasks = [], isLoading: tasksLoading } = useTasks(projectId)
   const bg = BG[theme]
+
+  // Show loading spinner while data is loading
+  if (agentsLoading || tasksLoading) {
+    return (
+      <div style={{ width: '100%', height: '100%', background: bg, borderRadius: '12px', overflow: 'hidden' }}>
+        <SceneLoadingFallback theme={theme} />
+      </div>
+    )
+  }
 
   return (
     <div style={{ width: '100%', height: '100%', background: bg, borderRadius: '12px', overflow: 'hidden' }}>
@@ -100,13 +155,13 @@ export function OfficeView({ projectId, theme }: OfficeViewProps) {
         }}
       >
         <span style={{ color: '#3b82f6' }}>
-          ● {agents.filter((a) => a.status === 'working').length} Working
+          {'\u25CF'} {agents.filter((a) => a.status === 'working').length} Working
         </span>
         <span style={{ color: '#22c55e' }}>
-          ● {agents.filter((a) => a.status === 'idle').length} Idle
+          {'\u25CF'} {agents.filter((a) => a.status === 'idle').length} Idle
         </span>
         <span style={{ color: theme === 'dark' ? '#64748b' : '#94a3b8' }}>
-          ● {agents.filter((a) => a.status === 'offline').length} Offline
+          {'\u25CF'} {agents.filter((a) => a.status === 'offline').length} Offline
         </span>
       </div>
     </div>

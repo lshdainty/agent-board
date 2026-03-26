@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAgents, useUpdateAgent, useDeleteAgent } from '@/hooks/useAgents';
+import { useTasks } from '@/hooks/useTasks';
 import { useActivities } from '@/hooks/useActivities';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Pencil, Trash2, Check, X } from 'lucide-react';
@@ -26,6 +27,7 @@ interface AgentDetailPanelProps {
 
 export function AgentDetailPanel({ agentId, projectId, onClose }: AgentDetailPanelProps) {
   const { data: agents = [] } = useAgents(projectId);
+  const { data: tasks = [] } = useTasks(projectId);
   const { data: activities = [] } = useActivities(projectId);
   const updateAgent = useUpdateAgent();
   const deleteAgent = useDeleteAgent();
@@ -34,6 +36,15 @@ export function AgentDetailPanel({ agentId, projectId, onClose }: AgentDetailPan
   const agentActivities = activities
     .filter((act) => act.agent_id === agentId)
     .slice(0, 5);
+
+  // Task breakdowns for this agent
+  const agentTasks = tasks.filter((t) => t.assignee_id === agentId);
+  const currentTasks = agentTasks.filter((t) => t.status === 'in_progress');
+  const assignedTasks = agentTasks.filter((t) => t.status !== 'done');
+  const completedCount = agentTasks.filter((t) => t.status === 'done').length;
+
+  // Last activity timestamp
+  const lastActivity = agentActivities.length > 0 ? agentActivities[0] : null;
 
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState('');
@@ -182,11 +193,61 @@ export function AgentDetailPanel({ agentId, projectId, onClose }: AgentDetailPan
             <div className="flex flex-col gap-1 text-xs text-[var(--color-muted-foreground)]">
               <span>Role: {agent.role}</span>
               <span>Status: {STATUS_LABELS[agent.status]}</span>
+              <span>Completed: {completedCount} tasks</span>
+              {lastActivity && (
+                <span>
+                  Last activity: {formatDistanceToNow(new Date(lastActivity.created_at), { addSuffix: true })}
+                </span>
+              )}
             </div>
           </>
         )}
       </div>
 
+      {/* Current tasks (in_progress) */}
+      {currentTasks.length > 0 && (
+        <div>
+          <h4 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1.5 px-1">
+            Current Task
+          </h4>
+          <div className="flex flex-col gap-1">
+            {currentTasks.map((task) => (
+              <div key={task.id} className="text-xs p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <p className="font-medium text-[var(--color-card-foreground)] truncate">{task.title}</p>
+                {task.description && (
+                  <p className="text-[10px] text-[var(--color-muted-foreground)] mt-0.5 line-clamp-2">{task.description}</p>
+                )}
+                <span className="inline-block mt-1 px-1.5 py-0.5 text-[10px] rounded bg-blue-500/20 text-blue-400">
+                  In Progress
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Assigned tasks (non-done) */}
+      {assignedTasks.length > 0 && (
+        <div>
+          <h4 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1.5 px-1">
+            Assigned Tasks ({assignedTasks.length})
+          </h4>
+          <div className="flex flex-col gap-1">
+            {assignedTasks.map((task) => (
+              <div key={task.id} className="text-xs p-2 rounded-lg bg-[var(--color-background)]">
+                <div className="flex items-center justify-between gap-1">
+                  <p className="font-medium text-[var(--color-card-foreground)] truncate">{task.title}</p>
+                  <span className="shrink-0 px-1.5 py-0.5 text-[10px] rounded bg-[var(--color-muted)] text-[var(--color-muted-foreground)]">
+                    {task.status === 'in_progress' ? 'WIP' : task.status === 'review' ? 'Review' : 'Todo'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent activity */}
       <div>
         <h4 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1.5 px-1">
           Recent Activity

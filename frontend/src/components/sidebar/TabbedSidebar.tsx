@@ -28,18 +28,33 @@ interface TabbedSidebarProps {
   projectId: number;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
+  externalTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
-export function TabbedSidebar({ projectId, theme, onToggleTheme }: TabbedSidebarProps) {
+export function TabbedSidebar({ projectId, theme, onToggleTheme, externalTab, onTabChange }: TabbedSidebarProps) {
   const [activeTab, setActiveTab] = useState<TabId>('agents');
   const { selectedAgentId, setSelectedAgentId } = useSelectedAgent();
+
+  // Sync from external tab changes (keyboard shortcuts)
+  useEffect(() => {
+    if (externalTab && TABS.some((t) => t.id === externalTab)) {
+      setActiveTab(externalTab as TabId);
+    }
+  }, [externalTab]);
 
   // Auto-switch to agents tab when an agent is selected (e.g. from 3D view)
   useEffect(() => {
     if (selectedAgentId !== null) {
       setActiveTab('agents');
+      onTabChange?.('agents');
     }
-  }, [selectedAgentId]);
+  }, [selectedAgentId, onTabChange]);
+
+  const handleTabClick = (tabId: TabId) => {
+    setActiveTab(tabId);
+    onTabChange?.(tabId);
+  };
 
   return (
     <div className="flex flex-col h-full bg-[var(--color-card)] rounded-lg border border-[var(--color-border)]">
@@ -51,7 +66,8 @@ export function TabbedSidebar({ projectId, theme, onToggleTheme }: TabbedSidebar
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabClick(tab.id)}
+              title={tab.label}
               className={cn(
                 'flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 text-[11px] font-medium transition-colors',
                 isActive
@@ -60,7 +76,7 @@ export function TabbedSidebar({ projectId, theme, onToggleTheme }: TabbedSidebar
               )}
             >
               <Icon size={14} />
-              {tab.label}
+              <span className="hidden sm:inline md:inline">{tab.label}</span>
             </button>
           );
         })}

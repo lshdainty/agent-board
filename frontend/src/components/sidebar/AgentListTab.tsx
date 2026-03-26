@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { useAgents } from '@/hooks/useAgents';
 import { useSelectedAgent } from '@/hooks/useSelectedAgent';
 import { cn } from '@/lib/utils';
-import { Plus } from 'lucide-react';
+import { Plus, RefreshCw, AlertTriangle, Users } from 'lucide-react';
 import { CreateAgentDialog } from './CreateAgentDialog';
 import type { Agent, AgentStatus } from '@/types';
 
@@ -71,10 +71,57 @@ function AgentRow({ agent, isSelected, onToggle }: { agent: Agent; isSelected: b
   );
 }
 
+function SkeletonAgentRow() {
+  return (
+    <div className="flex items-center gap-2 p-2 rounded-lg bg-[var(--color-background)] animate-pulse">
+      <div className="w-2 h-2 rounded-full bg-[var(--color-muted)]" />
+      <div className="flex-1 min-w-0 space-y-1">
+        <div className="h-4 w-24 bg-[var(--color-muted)] rounded" />
+        <div className="h-3 w-16 bg-[var(--color-muted)] rounded" />
+      </div>
+    </div>
+  );
+}
+
 export function AgentListTab({ projectId }: AgentListTabProps) {
-  const { data: agents = [] } = useAgents(projectId);
+  const { data: agents = [], isLoading, isError, refetch } = useAgents(projectId);
   const { selectedAgentId, toggleSelectedAgent } = useSelectedAgent();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="h-9 w-full bg-[var(--color-muted)] rounded-md animate-pulse" />
+        <div className="space-y-1">
+          <div className="h-3 w-20 bg-[var(--color-muted)] rounded animate-pulse mb-1.5 ml-1" />
+          <SkeletonAgentRow />
+          <SkeletonAgentRow />
+        </div>
+        <div className="space-y-1">
+          <div className="h-3 w-12 bg-[var(--color-muted)] rounded animate-pulse mb-1.5 ml-1" />
+          <SkeletonAgentRow />
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 gap-3 text-[var(--color-muted-foreground)]">
+        <AlertTriangle size={28} className="text-red-400" />
+        <p className="text-xs font-medium">Failed to load agents</p>
+        <button
+          onClick={() => refetch()}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--color-border)] hover:bg-[var(--color-muted)] transition-colors"
+        >
+          <RefreshCw size={12} />
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   const grouped = STATUS_ORDER.reduce<Record<AgentStatus, Agent[]>>(
     (acc, status) => {
@@ -117,9 +164,12 @@ export function AgentListTab({ projectId }: AgentListTabProps) {
         );
       })}
       {agents.length === 0 && (
-        <p className="text-xs text-[var(--color-muted-foreground)] text-center py-4">
-          No agents registered yet
-        </p>
+        <div className="flex flex-col items-center justify-center py-6 gap-2 text-[var(--color-muted-foreground)]">
+          <Users size={28} className="opacity-40" />
+          <p className="text-xs text-center">
+            No agents registered yet
+          </p>
+        </div>
       )}
 
       {showCreateDialog && (

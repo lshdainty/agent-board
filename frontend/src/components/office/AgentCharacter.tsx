@@ -49,8 +49,6 @@ const occupancyGrid = buildOccupancyGrid(
 const MOVE_SPEED = 1.8 // units per second
 const ARRIVE_THRESHOLD = 0.08
 const TRANSITION_DURATION = 0.5 // seconds for sit/stand transitions
-// Chair seat height: chair group at y=0, seat cylinder center at y=0.38, half-height 0.02 → top = 0.40
-const CHAIR_SEAT_Y = 0.40
 
 // Determine what zone an agent is in based on status
 function getTargetAnimState(
@@ -208,24 +206,14 @@ export function AgentCharacter({
     const waypoints = waypointsRef.current
     const wpIdx = waypointIndexRef.current
 
-    // ------ CHAIR HEIGHT: raise/lower group y for sitting ------
-    const isSitting =
-      animStateRef.current === 'sitting_down' ||
-      animStateRef.current === 'sitting_typing' ||
-      animStateRef.current === 'sitting_idle'
-    const isStandingUp = animStateRef.current === 'standing_up'
-    if (isSitting) {
-      pos.y = THREE.MathUtils.lerp(pos.y, CHAIR_SEAT_Y, Math.min(dt * 5, 0.15))
-    } else if (isStandingUp) {
-      pos.y = THREE.MathUtils.lerp(pos.y, 0, Math.min(dt * 5, 0.15))
-    }
+    // Group y always stays at 0 — seated height is handled by SEATED pose coordinates
+    pos.y = 0
 
     // Handle standing_up transition before walking
     if (animStateRef.current === 'standing_up') {
       transitionTimerRef.current += dt
       if (transitionTimerRef.current >= TRANSITION_DURATION) {
         // Transition complete — start walking if we need to move
-        pos.y = 0 // ensure we're back on the ground
         if (isMovingRef.current) {
           animStateRef.current = 'walking'
         } else {

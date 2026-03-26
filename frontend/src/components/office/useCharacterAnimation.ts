@@ -45,25 +45,25 @@ const REST = {
   eyeR:      { pos: [0.04, 0.72, 0.12], rot: [0, 0, 0] },
 } as const
 
-// Seated offset: group is raised to chair seat height (y=0.40) by AgentCharacter,
-// so body part y-positions are lowered to keep the character sitting on the seat.
-// Upper body uses SEAT_OFFSET_Y; legs/shoes use a larger offset to reach the floor.
-const SEAT_OFFSET_Y = -0.20
-const LEG_OFFSET_Y = -0.38  // legs need to dangle from seat to near-floor
+// Seated pose — absolute positions (group y stays at 0).
+// Chair seat top = 0.40.  Character's butt sits on that surface.
+// Torso center at seat + half-torso-height (0.175) = 0.575 ≈ 0.55.
+// Upper body in front of chair back (back at z=-0.14 in chair-local, chair at z+0.55 desk-local).
+// Legs bend 90° forward from seat edge; feet on floor.
 const SEATED = {
-  head:      { pos: [0, 0.7 + SEAT_OFFSET_Y, 0],         rot: [-0.1, 0, 0] },
-  armL:      { pos: [-0.22, 0.32 + SEAT_OFFSET_Y, 0.08], rot: [-0.6, 0, 0] },
-  armR:      { pos: [0.22, 0.32 + SEAT_OFFSET_Y, 0.08],  rot: [-0.6, 0, 0] },
-  handL:     { pos: [-0.15, 0.22 + SEAT_OFFSET_Y, 0.18], rot: [-0.4, 0, 0] },
-  handR:     { pos: [0.15, 0.22 + SEAT_OFFSET_Y, 0.18],  rot: [-0.4, 0, 0] },
-  legL:      { pos: [-0.07, 0.08 + LEG_OFFSET_Y, 0.10],  rot: [-1.2, 0, 0] },
-  legR:      { pos: [0.07, 0.08 + LEG_OFFSET_Y, 0.10],   rot: [-1.2, 0, 0] },
-  shoeL:     { pos: [-0.07, -0.02 + LEG_OFFSET_Y, 0.16], rot: [-0.5, 0, 0] },
-  shoeR:     { pos: [0.07, -0.02 + LEG_OFFSET_Y, 0.16],  rot: [-0.5, 0, 0] },
-  torso:     { pos: [0, 0.35 + SEAT_OFFSET_Y, 0],         rot: [-0.05, 0, 0] },
-  hairGroup: { pos: [0, 0.84 + SEAT_OFFSET_Y, 0],         rot: [-0.1, 0, 0] },
-  eyeL:      { pos: [-0.04, 0.72 + SEAT_OFFSET_Y, 0.12], rot: [0, 0, 0] },
-  eyeR:      { pos: [0.04, 0.72 + SEAT_OFFSET_Y, 0.12],  rot: [0, 0, 0] },
+  torso:     { pos: [0, 0.55, -0.05],        rot: [-0.05, 0, 0] },
+  head:      { pos: [0, 0.82, -0.04],        rot: [-0.1, 0, 0] },
+  hairGroup: { pos: [0, 0.96, -0.04],        rot: [-0.1, 0, 0] },
+  eyeL:      { pos: [-0.04, 0.84, 0.08],     rot: [0, 0, 0] },
+  eyeR:      { pos: [0.04, 0.84, 0.08],      rot: [0, 0, 0] },
+  armL:      { pos: [-0.22, 0.52, 0.08],     rot: [-0.6, 0, 0] },
+  armR:      { pos: [0.22, 0.52, 0.08],      rot: [-0.6, 0, 0] },
+  handL:     { pos: [-0.15, 0.42, 0.18],     rot: [-0.4, 0, 0] },
+  handR:     { pos: [0.15, 0.42, 0.18],      rot: [-0.4, 0, 0] },
+  legL:      { pos: [-0.07, 0.28, 0.12],     rot: [-1.4, 0, 0] },
+  legR:      { pos: [0.07, 0.28, 0.12],      rot: [-1.4, 0, 0] },
+  shoeL:     { pos: [-0.07, 0.03, 0.22],     rot: [0, 0, 0] },
+  shoeR:     { pos: [0.07, 0.03, 0.22],      rot: [0, 0, 0] },
 } as const
 
 // ---------------------------------------------------------------------------

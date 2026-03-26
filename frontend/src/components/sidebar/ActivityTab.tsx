@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { useActivities } from '@/hooks/useActivities';
-import { Plus, UserCheck, RefreshCw, CheckCircle, MessageSquare } from 'lucide-react';
+import { Plus, UserCheck, RefreshCw, CheckCircle, MessageSquare, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ComponentType } from 'react';
 
@@ -90,6 +90,7 @@ export function ActivityTab({ projectId }: ActivityTabProps) {
   const { data: activities = [] } = useActivities(projectId);
   const prevCountRef = useRef(activities.length);
   const [newIds, setNewIds] = useState<Set<number>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Track newly added activities
   useEffect(() => {
@@ -109,9 +110,31 @@ export function ActivityTab({ projectId }: ActivityTabProps) {
     prevCountRef.current = activities.length;
   }, [activities]);
 
+  const filteredActivities = searchQuery
+    ? activities.filter((a) => {
+        const q = searchQuery.toLowerCase();
+        return (
+          a.message.toLowerCase().includes(q) ||
+          (a.agent_name && a.agent_name.toLowerCase().includes(q))
+        );
+      })
+    : activities;
+
   return (
     <div className="flex flex-col gap-2">
-      {activities.map((activity) => (
+      {/* Search input */}
+      <div className="relative">
+        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]" />
+        <input
+          type="text"
+          placeholder="Search activity..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-8 pr-3 py-1.5 text-xs rounded-md border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-foreground)] placeholder:text-[var(--color-muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-shadow"
+        />
+      </div>
+
+      {filteredActivities.map((activity) => (
         <ActivityRow
           key={activity.id}
           activity={activity}
@@ -121,6 +144,11 @@ export function ActivityTab({ projectId }: ActivityTabProps) {
       {activities.length === 0 && (
         <p className="text-xs text-[var(--color-muted-foreground)] text-center py-4">
           No activity yet
+        </p>
+      )}
+      {activities.length > 0 && filteredActivities.length === 0 && searchQuery && (
+        <p className="text-xs text-[var(--color-muted-foreground)] text-center py-4">
+          No matching activity
         </p>
       )}
     </div>

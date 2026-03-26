@@ -307,18 +307,6 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
     return map
   }, [tasks])
 
-  // Track which desk slots have a seated agent (working or offline at desk)
-  const occupiedDeskIndices = useMemo(() => {
-    const set = new Set<number>()
-    for (const agent of agents) {
-      const pos = agentPositions.get(agent.id)
-      if (pos && pos.zone === 'desk' && pos.deskIndex != null) {
-        set.add(pos.deskIndex)
-      }
-    }
-    return set
-  }, [agents, agentPositions])
-
   return (
     <group>
       <OfficeFloor theme={theme} />
@@ -331,7 +319,6 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
           position={slot.position}
           rotation={slot.rotation}
           theme={theme}
-          hideChair={occupiedDeskIndices.has(i)}
         />
       ))}
 

@@ -23,7 +23,29 @@ export function useUpdateTaskStatus() {
       const resp = await api.patch<ApiResponse<Task>>(`/tasks/${taskId}`, { status });
       return resp.data.data;
     },
-    onSuccess: () => {
+    onMutate: async ({ taskId, status }) => {
+      // Cancel outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+
+      // Snapshot all task queries for rollback
+      const previousQueries = queryClient.getQueriesData<Task[]>({ queryKey: ['tasks'] });
+
+      // Optimistically update every matching query
+      queryClient.setQueriesData<Task[]>({ queryKey: ['tasks'] }, (old) =>
+        old?.map((t) => (t.id === taskId ? { ...t, status } : t)),
+      );
+
+      return { previousQueries };
+    },
+    onError: (_err, _vars, context) => {
+      // Rollback to the previous state
+      if (context?.previousQueries) {
+        for (const [key, data] of context.previousQueries) {
+          queryClient.setQueryData(key, data);
+        }
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
