@@ -3,6 +3,7 @@ import { Text, Billboard, RoundedBox } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { AgentStatus } from '@/types'
+import { useSettings } from '@/hooks/useSettings'
 
 interface AgentNameLabelProps {
   name: string
@@ -19,6 +20,10 @@ const STATUS_COLORS: Record<AgentStatus, string> = {
 }
 
 export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNameLabelProps) {
+  const { settings } = useSettings()
+
+  if (!settings.nameLabels) return null
+
   const isDark = theme === 'dark'
   const textColor = isDark ? '#e2e8f0' : '#0f172a'
   const subColor = isDark ? '#94a3b8' : '#64748b'

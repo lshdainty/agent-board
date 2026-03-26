@@ -6,6 +6,7 @@ import { OfficeView } from '@/components/office/OfficeView';
 import { useSocket } from '@/hooks/useSocket';
 import { useSelectedAgent } from '@/hooks/useSelectedAgent';
 import { SelectedAgentProvider } from '@/hooks/useSelectedAgent';
+import { SettingsProvider } from '@/hooks/useSettings';
 import { ToastContainer } from '@/components/Toast';
 import { LayoutDashboard, Building2, ChevronDown, Sun, Moon, Plus, Settings, X, Trash2, PanelRight } from 'lucide-react';
 import axios from 'axios';
@@ -697,9 +698,11 @@ function Dashboard() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <SelectedAgentProvider>
-        <Dashboard />
-      </SelectedAgentProvider>
+      <SettingsProvider>
+        <SelectedAgentProvider>
+          <Dashboard />
+        </SelectedAgentProvider>
+      </SettingsProvider>
     </QueryClientProvider>
   );
 }

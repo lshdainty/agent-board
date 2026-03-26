@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { OfficeScene } from './OfficeScene'
 import { useAgents } from '@/hooks/useAgents'
 import { useTasks } from '@/hooks/useTasks'
+import { useSettings } from '@/hooks/useSettings'
 
 interface OfficeViewProps {
   projectId: number
@@ -113,6 +114,7 @@ class Scene3DErrorBoundary extends Component<
 export function OfficeView({ projectId, theme }: OfficeViewProps) {
   const { data: agents = [], isLoading: agentsLoading } = useAgents(projectId)
   const { data: tasks = [], isLoading: tasksLoading } = useTasks(projectId)
+  const { settings } = useSettings()
   const bg = BG[theme]
   const isLoading = agentsLoading || tasksLoading
 
@@ -120,7 +122,7 @@ export function OfficeView({ projectId, theme }: OfficeViewProps) {
     <div style={{ width: '100%', height: '100%', background: bg, borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
       <Scene3DErrorBoundary>
         <Canvas
-          shadows
+          shadows={settings.shadows}
           frameloop="always"
           orthographic
           camera={{ position: [15, 15, 15], zoom: 40, near: 0.1, far: 100 }}

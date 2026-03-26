@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { useActivities } from '@/hooks/useActivities';
 import { Plus, UserCheck, RefreshCw, CheckCircle, MessageSquare, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSettings } from '@/hooks/useSettings';
 import type { ComponentType } from 'react';
 
 const ACTION_ICONS: Record<string, ComponentType<{ size?: number; className?: string }>> = {
@@ -87,7 +88,8 @@ function ActivityRow({ activity, isNew }: {
 }
 
 export function ActivityTab({ projectId }: ActivityTabProps) {
-  const { data: activities = [] } = useActivities(projectId);
+  const { settings } = useSettings();
+  const { data: activities = [] } = useActivities(projectId, settings.activityLogCount);
   const prevCountRef = useRef(activities.length);
   const [newIds, setNewIds] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');

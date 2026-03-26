@@ -1,32 +1,13 @@
-import { useState, useEffect } from 'react';
 import { Sun, Moon, Layers, List, Tag } from 'lucide-react';
+import { useSettings } from '@/hooks/useSettings';
 
 interface SettingsTabProps {
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
 }
 
-function useSetting<T>(key: string, defaultValue: T): [T, (v: T) => void] {
-  const [value, setValue] = useState<T>(() => {
-    try {
-      const stored = localStorage.getItem(key);
-      return stored !== null ? (JSON.parse(stored) as T) : defaultValue;
-    } catch {
-      return defaultValue;
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(value));
-  }, [key, value]);
-
-  return [value, setValue];
-}
-
 export function SettingsTab({ theme, onToggleTheme }: SettingsTabProps) {
-  const [shadows, setShadows] = useSetting('settings:shadows', true);
-  const [activityLogCount, setActivityLogCount] = useSetting('settings:activityLogCount', 25);
-  const [showAgentLabels, setShowAgentLabels] = useSetting('settings:showAgentLabels', true);
+  const { settings, updateSetting } = useSettings();
 
   return (
     <div className="flex flex-col gap-5">
@@ -57,14 +38,14 @@ export function SettingsTab({ theme, onToggleTheme }: SettingsTabProps) {
             <span className="text-sm text-[var(--color-card-foreground)]">Shadows</span>
           </div>
           <button
-            onClick={() => setShadows(!shadows)}
+            onClick={() => updateSetting('shadows', !settings.shadows)}
             className={`relative w-9 h-5 rounded-full transition-colors ${
-              shadows ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-muted)]'
+              settings.shadows ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-muted)]'
             }`}
           >
             <span
               className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                shadows ? 'translate-x-4' : 'translate-x-0'
+                settings.shadows ? 'translate-x-4' : 'translate-x-0'
               }`}
             />
           </button>
@@ -82,8 +63,8 @@ export function SettingsTab({ theme, onToggleTheme }: SettingsTabProps) {
             <span className="text-sm text-[var(--color-card-foreground)]">Display count</span>
           </div>
           <select
-            value={activityLogCount}
-            onChange={(e) => setActivityLogCount(Number(e.target.value))}
+            value={settings.activityLogCount}
+            onChange={(e) => updateSetting('activityLogCount', Number(e.target.value))}
             className="px-2 py-1 text-xs rounded-md border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
           >
             <option value={10}>10</option>
@@ -104,14 +85,14 @@ export function SettingsTab({ theme, onToggleTheme }: SettingsTabProps) {
             <span className="text-sm text-[var(--color-card-foreground)]">Name labels</span>
           </div>
           <button
-            onClick={() => setShowAgentLabels(!showAgentLabels)}
+            onClick={() => updateSetting('nameLabels', !settings.nameLabels)}
             className={`relative w-9 h-5 rounded-full transition-colors ${
-              showAgentLabels ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-muted)]'
+              settings.nameLabels ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-muted)]'
             }`}
           >
             <span
               className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                showAgentLabels ? 'translate-x-4' : 'translate-x-0'
+                settings.nameLabels ? 'translate-x-4' : 'translate-x-0'
               }`}
             />
           </button>
