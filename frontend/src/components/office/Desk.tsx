@@ -133,7 +133,7 @@ export const Desk = memo(function Desk({ position, rotation = 0, theme, agentSta
           <cylinderGeometry args={[0.18, 0.18, 0.04, 12]} />
           <meshStandardMaterial color={chair} />
         </mesh>
-        <mesh position={[0, 0.55, -0.14]} castShadow>
+        <mesh position={[0, 0.55, 0.14]} castShadow>
           <boxGeometry args={[0.3, 0.3, 0.03]} />
           <meshStandardMaterial color={chair} />
         </mesh>

@@ -210,7 +210,7 @@ export function AgentCharacter({
     const isSitting = animStateRef.current === 'sitting_typing' ||
       animStateRef.current === 'sitting_idle' ||
       animStateRef.current === 'sitting_down'
-    const targetY = isSitting ? 0.15 : 0
+    const targetY = isSitting ? 0.08 : 0
     pos.y = THREE.MathUtils.lerp(pos.y, targetY, Math.min(dt * 6, 0.2))
 
     // Handle standing_up transition before walking
