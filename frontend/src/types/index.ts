@@ -56,12 +56,14 @@ export interface AgentAppearance {
 }
 
 // Agent position in 3D office
-export type AgentZone = 'desk' | 'meeting' | 'coffee' | 'walking';
+export type AgentZone = 'desk' | 'meeting' | 'coffee' | 'bookshelf';
+
+export type AgentAnimation = 'walking' | 'sitting_typing' | 'sitting_idle' | 'standing_idle';
 
 export interface AgentPosition {
-  current: [number, number, number];
-  target: [number, number, number];
+  targetPosition: [number, number, number];
+  previousPosition: [number, number, number];
   zone: AgentZone;
-  deskSlotIndex?: number;
-  waypoints?: [number, number, number][];
+  deskIndex?: number;
+  animation: AgentAnimation;
 }

@@ -74,7 +74,7 @@ export function OfficeView({ projectId, theme }: OfficeViewProps) {
       <Scene3DErrorBoundary>
         <Canvas
           shadows
-          frameloop="demand"
+          frameloop="always"
           orthographic
           camera={{ position: [15, 15, 15], zoom: 40, near: 0.1, far: 100 }}
           gl={{ antialias: true, alpha: false }}

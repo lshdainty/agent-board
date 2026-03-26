@@ -6,7 +6,15 @@ import { AgentNameLabel } from './AgentNameLabel'
 import { AgentHair } from './AgentHair'
 import { getAgentAppearance } from '@/lib/agentAppearance'
 import { findPath, buildOccupancyGrid } from '@/lib/pathfinding'
-import { DESK_SLOTS, MEETING_CENTER, ROOM_WIDTH, ROOM_DEPTH, GRID_CELL_SIZE, GRID_ORIGIN } from '@/constants/office'
+import {
+  DESK_SLOTS,
+  MEETING_CENTER,
+  ROOM_WIDTH,
+  ROOM_DEPTH,
+  GRID_CELL_SIZE,
+  GRID_ORIGIN,
+} from '@/constants/office'
+import { useCharacterAnimation, type AnimState } from './useCharacterAnimation'
 
 interface AgentCharacterProps {
   agent: Agent
@@ -27,10 +35,47 @@ const obstacles = DESK_SLOTS.map((slot) => ({
   center: [slot.position[0], slot.position[2]] as [number, number],
   halfSize: [0.6, 0.4] as [number, number],
 }))
-obstacles.push({ center: [MEETING_CENTER[0], MEETING_CENTER[2]], halfSize: [1.2, 1.2] })
-const occupancyGrid = buildOccupancyGrid(ROOM_WIDTH, ROOM_DEPTH, GRID_CELL_SIZE, obstacles)
+obstacles.push({
+  center: [MEETING_CENTER[0], MEETING_CENTER[2]],
+  halfSize: [1.2, 1.2],
+})
+const occupancyGrid = buildOccupancyGrid(
+  ROOM_WIDTH,
+  ROOM_DEPTH,
+  GRID_CELL_SIZE,
+  obstacles,
+)
 
-const MOVE_SPEED = 2 // units per second
+const MOVE_SPEED = 1.8 // units per second
+const ARRIVE_THRESHOLD = 0.08
+const TRANSITION_DURATION = 0.5 // seconds for sit/stand transitions
+
+// Determine what zone an agent is in based on status
+function getTargetAnimState(
+  agentStatus: string,
+  isAtDesk: boolean,
+): AnimState {
+  switch (agentStatus) {
+    case 'working':
+      return isAtDesk ? 'sitting_typing' : 'standing_idle'
+    case 'idle':
+      return 'standing_idle'
+    case 'offline':
+      return isAtDesk ? 'sitting_idle' : 'standing_idle'
+    default:
+      return 'standing_idle'
+  }
+}
+
+// Check if a target position corresponds to a desk seat
+function isTargetAtDesk(target: [number, number, number]): boolean {
+  for (const slot of DESK_SLOTS) {
+    const dx = Math.abs(target[0] - slot.position[0])
+    const dz = Math.abs(target[2] - (slot.position[2] + 0.55))
+    if (dx < 0.3 && dz < 0.3) return true
+  }
+  return false
+}
 
 export function AgentCharacter({
   agent,
@@ -41,21 +86,30 @@ export function AgentCharacter({
 }: AgentCharacterProps) {
   const groupRef = useRef<THREE.Group>(null)
   const labelGroupRef = useRef<THREE.Group>(null)
-  const torsoRef = useRef<THREE.Mesh>(null)
   const hoveredRef = useRef(false)
-  const targetVec = useMemo(() => new THREE.Vector3(...targetPosition), [targetPosition])
 
-  // Pathfinding waypoints
+  // Animation system
+  const { refs, animStateRef, animate } = useCharacterAnimation()
+
+  // Pathfinding state
   const waypointsRef = useRef<[number, number, number][]>([])
   const waypointIndexRef = useRef(0)
   const prevTargetRef = useRef<string>('')
+  const isMovingRef = useRef(false)
+
+  // Transition timer for sit/stand
+  const transitionTimerRef = useRef(0)
+
+  // Previous status for detecting status changes
+  const prevStatusRef = useRef(agent.status)
 
   const appearance = useMemo(() => getAgentAppearance(agent.id), [agent.id])
   const statusColor = STATUS_COLORS[agent.status] || STATUS_COLORS.offline
   const isOffline = agent.status === 'offline'
   const opacity = isOffline ? 0.35 : 1
+  const atDesk = useMemo(() => isTargetAtDesk(targetPosition), [targetPosition])
 
-  const onPointerOver = useCallback((e: THREE.Event) => {
+  const onPointerOver = useCallback((e: { stopPropagation: () => void }) => {
     e.stopPropagation()
     document.body.style.cursor = 'pointer'
     hoveredRef.current = true
@@ -82,67 +136,194 @@ export function AgentCharacter({
     }
   }, [])
 
-  // Pathfinding + smooth movement along waypoints
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     if (!groupRef.current) return
 
-    // Recompute path when target changes
+    // Clamp delta to avoid jumps on tab switch
+    const dt = Math.min(delta, 0.1)
+    const time = state.clock.getElapsedTime()
+
+    // Always request next frame for continuous animation
+    state.invalidate()
+
+    // ------ STATUS CHANGE DETECTION ------
+    if (prevStatusRef.current !== agent.status) {
+      prevStatusRef.current = agent.status
+      // Status changed — will be handled by target position change below
+    }
+
+    // ------ PATHFINDING: recompute when target changes ------
     const targetKey = targetPosition.join(',')
     if (targetKey !== prevTargetRef.current) {
       prevTargetRef.current = targetKey
+
+      // If currently sitting, stand up first before walking
+      const currentAnim = animStateRef.current
+      if (
+        currentAnim === 'sitting_typing' ||
+        currentAnim === 'sitting_idle'
+      ) {
+        animStateRef.current = 'standing_up'
+        transitionTimerRef.current = 0
+      }
+
       const currentPos: [number, number, number] = [
         groupRef.current.position.x,
         groupRef.current.position.y,
         groupRef.current.position.z,
       ]
-      const path = findPath(occupancyGrid, currentPos, targetPosition, GRID_CELL_SIZE, GRID_ORIGIN)
-      if (path.length > 0) {
-        waypointsRef.current = path
+
+      const dist = Math.hypot(
+        targetPosition[0] - currentPos[0],
+        targetPosition[2] - currentPos[2],
+      )
+
+      // Only pathfind if distance is meaningful
+      if (dist > 0.2) {
+        const path = findPath(
+          occupancyGrid,
+          currentPos,
+          targetPosition,
+          GRID_CELL_SIZE,
+          GRID_ORIGIN,
+        )
+        if (path.length > 0) {
+          waypointsRef.current = path
+        } else {
+          waypointsRef.current = [targetPosition]
+        }
         waypointIndexRef.current = 0
+        isMovingRef.current = true
       } else {
-        // Fallback: direct lerp if no path found
         waypointsRef.current = [targetPosition]
         waypointIndexRef.current = 0
+        isMovingRef.current = false
       }
     }
 
+    // ------ MOVEMENT ------
+    const pos = groupRef.current.position
     const waypoints = waypointsRef.current
     const wpIdx = waypointIndexRef.current
 
-    if (waypoints.length > 0 && wpIdx < waypoints.length) {
-      const wp = waypoints[wpIdx]
-      const wpVec = new THREE.Vector3(wp[0], wp[1], wp[2])
-      const pos = groupRef.current.position
-      const dir = wpVec.clone().sub(pos)
-      dir.y = 0 // Keep on ground plane
-      const dist = dir.length()
-
-      if (dist < 0.05) {
-        // Arrived at waypoint, move to next
-        waypointIndexRef.current++
-      } else {
-        // Move toward waypoint at fixed speed
-        const step = Math.min(MOVE_SPEED * delta, dist)
-        dir.normalize().multiplyScalar(step)
-        pos.add(dir)
+    // Handle standing_up transition before walking
+    if (animStateRef.current === 'standing_up') {
+      transitionTimerRef.current += dt
+      if (transitionTimerRef.current >= TRANSITION_DURATION) {
+        // Transition complete — start walking if we need to move
+        if (isMovingRef.current) {
+          animStateRef.current = 'walking'
+        } else {
+          animStateRef.current = getTargetAnimState(agent.status, atDesk)
+        }
+        transitionTimerRef.current = 0
       }
-    } else {
-      // Reached final waypoint — apply status animations at target
-      groupRef.current.position.lerp(targetVec, Math.min(delta * 3, 0.08))
+      animate('standing_up', time, dt)
+      return
     }
 
-    const time = Date.now() * 0.001
-
-    // Only apply status animations when at destination
-    const atDest = groupRef.current.position.distanceTo(targetVec) < 0.1
-    if (atDest) {
-      if (agent.status === 'working') {
-        const bob = Math.sin(time * 3) * 0.02
-        groupRef.current.position.y = targetVec.y + bob
-      } else if (agent.status === 'idle') {
-        const sway = Math.sin(time * 0.5) * 0.01
-        groupRef.current.position.x = targetVec.x + sway
+    // Handle sitting_down transition
+    if (animStateRef.current === 'sitting_down') {
+      transitionTimerRef.current += dt
+      if (transitionTimerRef.current >= TRANSITION_DURATION) {
+        // Transition complete — go to final seated state
+        animStateRef.current = getTargetAnimState(agent.status, atDesk)
+        transitionTimerRef.current = 0
       }
+      animate('sitting_down', time, dt)
+      return
+    }
+
+    if (isMovingRef.current && waypoints.length > 0 && wpIdx < waypoints.length) {
+      const wp = waypoints[wpIdx]
+      const wpVec = new THREE.Vector3(wp[0], wp[1], wp[2])
+      const dir = wpVec.clone().sub(pos)
+      dir.y = 0
+      const dist = dir.length()
+
+      if (dist < ARRIVE_THRESHOLD) {
+        // Arrived at waypoint
+        waypointIndexRef.current++
+        if (waypointIndexRef.current >= waypoints.length) {
+          // Arrived at final destination
+          isMovingRef.current = false
+          pos.set(wp[0], wp[1], wp[2])
+
+          // Start sitting down if destination is a desk
+          if (atDesk) {
+            animStateRef.current = 'sitting_down'
+            transitionTimerRef.current = 0
+          } else {
+            animStateRef.current = getTargetAnimState(agent.status, false)
+          }
+        }
+      } else {
+        // Move toward waypoint
+        const step = Math.min(MOVE_SPEED * dt, dist)
+        dir.normalize().multiplyScalar(step)
+        pos.add(dir)
+
+        // Rotate character toward movement direction
+        const targetAngle = Math.atan2(dir.x, dir.z)
+        groupRef.current.rotation.y = THREE.MathUtils.lerp(
+          groupRef.current.rotation.y,
+          targetAngle,
+          Math.min(dt * 8, 0.3),
+        )
+
+        animStateRef.current = 'walking'
+      }
+
+      animate(animStateRef.current, time, dt)
+    } else {
+      // Not moving — at destination
+      isMovingRef.current = false
+
+      // Snap to target position smoothly
+      const targetVec = new THREE.Vector3(...targetPosition)
+      if (pos.distanceTo(targetVec) > 0.01) {
+        pos.lerp(targetVec, Math.min(dt * 4, 0.1))
+      }
+
+      // Face forward (reset rotation) when idle at destination
+      // eslint-disable-next-line -- ref is mutated in multiple branches
+      const currentAnim = animStateRef.current as AnimState
+      if (
+        currentAnim !== ('sitting_down' as AnimState) &&
+        currentAnim !== ('standing_up' as AnimState)
+      ) {
+        // Determine target animation
+        const targetAnim = getTargetAnimState(agent.status, atDesk)
+        if (
+          currentAnim === 'walking' &&
+          atDesk &&
+          (targetAnim === 'sitting_typing' || targetAnim === 'sitting_idle')
+        ) {
+          // Need to sit down first
+          animStateRef.current = 'sitting_down'
+          transitionTimerRef.current = 0
+        } else if (currentAnim !== targetAnim) {
+          animStateRef.current = targetAnim
+        }
+
+        // Reset rotation toward desk (face z+ direction) when at desk
+        if (atDesk) {
+          groupRef.current.rotation.y = THREE.MathUtils.lerp(
+            groupRef.current.rotation.y,
+            0,
+            Math.min(dt * 3, 0.1),
+          )
+        } else {
+          // Slowly return to neutral rotation
+          groupRef.current.rotation.y = THREE.MathUtils.lerp(
+            groupRef.current.rotation.y,
+            0,
+            Math.min(dt * 1.5, 0.05),
+          )
+        }
+      }
+
+      animate(animStateRef.current, time, dt)
     }
   })
 
@@ -158,7 +339,7 @@ export function AgentCharacter({
       onPointerOut={onPointerOut}
     >
       {/* Head */}
-      <mesh position={[0, 0.7, 0]} castShadow>
+      <mesh ref={refs.head} position={[0, 0.7, 0]} castShadow>
         <sphereGeometry args={[0.14, 16, 16]} />
         <meshStandardMaterial
           color="#e8d5c4"
@@ -168,22 +349,34 @@ export function AgentCharacter({
       </mesh>
 
       {/* Eyes */}
-      <mesh position={[-0.04, 0.72, 0.12]}>
+      <mesh ref={refs.eyeL} position={[-0.04, 0.72, 0.12]}>
         <sphereGeometry args={[0.02, 8, 8]} />
-        <meshStandardMaterial color="#000000" transparent={isOffline} opacity={opacity} />
+        <meshStandardMaterial
+          color="#000000"
+          transparent={isOffline}
+          opacity={opacity}
+        />
       </mesh>
-      <mesh position={[0.04, 0.72, 0.12]}>
+      <mesh ref={refs.eyeR} position={[0.04, 0.72, 0.12]}>
         <sphereGeometry args={[0.02, 8, 8]} />
-        <meshStandardMaterial color="#000000" transparent={isOffline} opacity={opacity} />
+        <meshStandardMaterial
+          color="#000000"
+          transparent={isOffline}
+          opacity={opacity}
+        />
       </mesh>
 
       {/* Hair */}
-      <group position={[0, 0.84, 0]}>
-        <AgentHair style={appearance.hairStyle} color={appearance.hairColor} opacity={opacity} />
+      <group ref={refs.hairGroup} position={[0, 0.84, 0]}>
+        <AgentHair
+          style={appearance.hairStyle}
+          color={appearance.hairColor}
+          opacity={opacity}
+        />
       </group>
 
       {/* Torso */}
-      <mesh ref={torsoRef} position={[0, 0.35, 0]} castShadow>
+      <mesh ref={refs.torso} position={[0, 0.35, 0]} castShadow>
         <boxGeometry args={[0.3, 0.35, 0.2]} />
         <meshStandardMaterial
           color={appearance.shirtColor}
@@ -192,8 +385,8 @@ export function AgentCharacter({
         />
       </mesh>
 
-      {/* Arms */}
-      <mesh position={[-0.22, 0.35, 0]} castShadow>
+      {/* Left Arm */}
+      <mesh ref={refs.armL} position={[-0.22, 0.35, 0]} castShadow>
         <boxGeometry args={[0.08, 0.28, 0.1]} />
         <meshStandardMaterial
           color={appearance.shirtColor}
@@ -201,7 +394,8 @@ export function AgentCharacter({
           opacity={opacity}
         />
       </mesh>
-      <mesh position={[0.22, 0.35, 0]} castShadow>
+      {/* Right Arm */}
+      <mesh ref={refs.armR} position={[0.22, 0.35, 0]} castShadow>
         <boxGeometry args={[0.08, 0.28, 0.1]} />
         <meshStandardMaterial
           color={appearance.shirtColor}
@@ -210,18 +404,27 @@ export function AgentCharacter({
         />
       </mesh>
 
-      {/* Hands */}
-      <mesh position={[-0.22, 0.18, 0]} castShadow>
+      {/* Left Hand */}
+      <mesh ref={refs.handL} position={[-0.22, 0.18, 0]} castShadow>
         <sphereGeometry args={[0.04, 8, 8]} />
-        <meshStandardMaterial color="#e8d5c4" transparent={isOffline} opacity={opacity} />
+        <meshStandardMaterial
+          color="#e8d5c4"
+          transparent={isOffline}
+          opacity={opacity}
+        />
       </mesh>
-      <mesh position={[0.22, 0.18, 0]} castShadow>
+      {/* Right Hand */}
+      <mesh ref={refs.handR} position={[0.22, 0.18, 0]} castShadow>
         <sphereGeometry args={[0.04, 8, 8]} />
-        <meshStandardMaterial color="#e8d5c4" transparent={isOffline} opacity={opacity} />
+        <meshStandardMaterial
+          color="#e8d5c4"
+          transparent={isOffline}
+          opacity={opacity}
+        />
       </mesh>
 
-      {/* Legs */}
-      <mesh position={[-0.07, 0.1, 0]} castShadow>
+      {/* Left Leg */}
+      <mesh ref={refs.legL} position={[-0.07, 0.1, 0]} castShadow>
         <boxGeometry args={[0.1, 0.22, 0.12]} />
         <meshStandardMaterial
           color={appearance.pantsColor}
@@ -229,7 +432,8 @@ export function AgentCharacter({
           opacity={opacity}
         />
       </mesh>
-      <mesh position={[0.07, 0.1, 0]} castShadow>
+      {/* Right Leg */}
+      <mesh ref={refs.legR} position={[0.07, 0.1, 0]} castShadow>
         <boxGeometry args={[0.1, 0.22, 0.12]} />
         <meshStandardMaterial
           color={appearance.pantsColor}
@@ -238,14 +442,23 @@ export function AgentCharacter({
         />
       </mesh>
 
-      {/* Shoes */}
-      <mesh position={[-0.07, 0.02, 0.01]} castShadow>
+      {/* Left Shoe */}
+      <mesh ref={refs.shoeL} position={[-0.07, 0.02, 0.01]} castShadow>
         <boxGeometry args={[0.1, 0.04, 0.14]} />
-        <meshStandardMaterial color="#1a1a2e" transparent={isOffline} opacity={opacity} />
+        <meshStandardMaterial
+          color="#1a1a2e"
+          transparent={isOffline}
+          opacity={opacity}
+        />
       </mesh>
-      <mesh position={[0.07, 0.02, 0.01]} castShadow>
+      {/* Right Shoe */}
+      <mesh ref={refs.shoeR} position={[0.07, 0.02, 0.01]} castShadow>
         <boxGeometry args={[0.1, 0.04, 0.14]} />
-        <meshStandardMaterial color="#1a1a2e" transparent={isOffline} opacity={opacity} />
+        <meshStandardMaterial
+          color="#1a1a2e"
+          transparent={isOffline}
+          opacity={opacity}
+        />
       </mesh>
 
       {/* Status indicator */}
@@ -260,7 +473,7 @@ export function AgentCharacter({
         />
       </mesh>
 
-      {/* Name label — opacity controlled by hover */}
+      {/* Name label */}
       <group ref={labelGroupRef}>
         <AgentNameLabel
           name={agent.name}

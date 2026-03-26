@@ -33,6 +33,22 @@ export const COFFEE_AREA: [number, number, number] = [7, 0, 4]
 export const GRID_CELL_SIZE = 0.5
 export const GRID_ORIGIN: [number, number] = [-ROOM_WIDTH / 2, -ROOM_DEPTH / 2]
 
+// Coffee area seating positions (around the small round table near coffee counter)
+export const COFFEE_SEATS: [number, number, number][] = [
+  [COFFEE_AREA[0] + 0.7, 0, COFFEE_AREA[2] + 1.2],   // chair 1
+  [COFFEE_AREA[0] - 0.7, 0, COFFEE_AREA[2] + 1.2],   // chair 2
+  [COFFEE_AREA[0] + 0.4, 0, COFFEE_AREA[2] + 1.8],   // standing near table
+  [COFFEE_AREA[0] - 0.4, 0, COFFEE_AREA[2] + 1.8],   // standing near table
+]
+
+// Bookshelf browsing positions
+export const BOOKSHELF_POSITIONS: [number, number, number][] = [
+  [-8.5, 0, -5.5],  // in front of left bookshelf
+  [-8.0, 0, -5.5],
+  [8.5, 0, -5.5],   // in front of right bookshelf
+  [8.0, 0, -5.5],
+]
+
 // Agent appearance presets (deterministic by agent ID)
 export const AGENT_APPEARANCES = [
   { shirtColor: '#3b82f6', pantsColor: '#1e3a5f', hairStyle: 'short' as const, hairColor: '#2c1810' },

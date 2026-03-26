@@ -9,25 +9,13 @@ import { CoffeeArea } from './CoffeeArea'
 import { AgentCharacter } from './AgentCharacter'
 import { DESK_SLOTS, MEETING_CENTER, COFFEE_AREA } from '@/constants/office'
 import { useSelectedAgent } from '@/hooks/useSelectedAgent'
+import { useAgentPositions } from '@/hooks/useAgentPositions'
 import type { Agent, Task } from '@/types'
 
 interface OfficeLayoutProps {
   agents: Agent[]
   tasks: Task[]
   theme: 'light' | 'dark'
-}
-
-function getMeetingSeatPosition(
-  index: number,
-  total: number,
-): [number, number, number] {
-  const angle = (index / Math.max(total, 1)) * Math.PI * 2 - Math.PI / 2
-  const radius = 1.6
-  return [
-    MEETING_CENTER[0] + Math.cos(angle) * radius,
-    0,
-    MEETING_CENTER[2] + Math.sin(angle) * radius,
-  ]
 }
 
 // Decorative plant
@@ -52,7 +40,7 @@ const Plant = memo(function Plant({ position }: { position: [number, number, num
   )
 })
 
-// Whiteboard
+// Whiteboard with post-it notes
 const Whiteboard = memo(function Whiteboard({
   position,
   rotation = 0,
@@ -60,6 +48,9 @@ const Whiteboard = memo(function Whiteboard({
   position: [number, number, number]
   rotation?: number
 }) {
+  // Post-it colors
+  const postItColors = ['#fef08a', '#fca5a5', '#86efac', '#93c5fd', '#fdba74', '#c4b5fd']
+
   return (
     <group position={position} rotation={[0, rotation, 0]}>
       {/* Board */}
@@ -81,24 +72,80 @@ const Whiteboard = memo(function Whiteboard({
         <boxGeometry args={[0.03, 1.2, 0.03]} />
         <meshStandardMaterial color="#4a4a5a" />
       </mesh>
+
+      {/* Post-it notes scattered on the board */}
+      {postItColors.map((color, i) => {
+        const col = i % 3
+        const row = Math.floor(i / 3)
+        const x = -0.45 + col * 0.4 + (i * 0.05 - 0.1)
+        const y = 1.35 - row * 0.35 + (i * 0.02 - 0.04)
+        const rotZ = (i * 0.12 - 0.3) * 0.3
+        return (
+          <mesh key={i} position={[x, y, 0.025]} rotation={[0, 0, rotZ]}>
+            <boxGeometry args={[0.15, 0.15, 0.005]} />
+            <meshStandardMaterial color={color} />
+          </mesh>
+        )
+      })}
+    </group>
+  )
+})
+
+// Paper stack on desks
+const PaperStack = memo(function PaperStack({
+  position,
+}: {
+  position: [number, number, number]
+}) {
+  return (
+    <group position={position}>
+      {/* Stack of papers — 3 slightly offset sheets */}
+      <mesh position={[0, 0.005, 0]} castShadow>
+        <boxGeometry args={[0.18, 0.01, 0.24]} />
+        <meshStandardMaterial color="#f5f5f5" />
+      </mesh>
+      <mesh position={[0.01, 0.015, -0.005]} castShadow>
+        <boxGeometry args={[0.18, 0.01, 0.24]} />
+        <meshStandardMaterial color="#ebebeb" />
+      </mesh>
+      <mesh position={[-0.005, 0.025, 0.003]} castShadow>
+        <boxGeometry args={[0.18, 0.01, 0.24]} />
+        <meshStandardMaterial color="#e0e0e0" />
+      </mesh>
+    </group>
+  )
+})
+
+// Small laptop on desk
+const Laptop = memo(function Laptop({
+  position,
+}: {
+  position: [number, number, number]
+}) {
+  return (
+    <group position={position}>
+      {/* Base */}
+      <mesh position={[0, 0.01, 0]} castShadow>
+        <boxGeometry args={[0.28, 0.015, 0.2]} />
+        <meshStandardMaterial color="#333340" />
+      </mesh>
+      {/* Screen (angled up) */}
+      <mesh position={[0, 0.1, -0.09]} rotation={[-0.25, 0, 0]} castShadow>
+        <boxGeometry args={[0.26, 0.18, 0.008]} />
+        <meshStandardMaterial color="#333340" />
+      </mesh>
+      {/* Screen display */}
+      <mesh position={[0, 0.1, -0.085]} rotation={[-0.25, 0, 0]}>
+        <boxGeometry args={[0.22, 0.14, 0.002]} />
+        <meshStandardMaterial color="#1a73e8" emissive="#1a73e8" emissiveIntensity={0.15} />
+      </mesh>
     </group>
   )
 })
 
 export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
   const { toggleSelectedAgent } = useSelectedAgent()
-
-  const { workingAgents, idleAgents, offlineAgents } = useMemo(() => {
-    const working: Agent[] = []
-    const idle: Agent[] = []
-    const offline: Agent[] = []
-    for (const agent of agents) {
-      if (agent.status === 'working') working.push(agent)
-      else if (agent.status === 'idle') idle.push(agent)
-      else offline.push(agent)
-    }
-    return { workingAgents: working, idleAgents: idle, offlineAgents: offline }
-  }, [agents])
+  const agentPositions = useAgentPositions(agents, tasks)
 
   // Map agent to their current in_progress task
   const agentTaskMap = useMemo(() => {
@@ -119,6 +166,28 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
       {/* Desks — all 12 slots */}
       {DESK_SLOTS.map((slot, i) => (
         <Desk key={`desk-${i}`} position={slot.position} rotation={slot.rotation} theme={theme} />
+      ))}
+
+      {/* Desk decorations — paper stacks and laptops on alternating desks */}
+      {DESK_SLOTS.map((slot, i) => (
+        <group key={`desk-decor-${i}`}>
+          {/* Paper stack on right side of desk */}
+          <PaperStack
+            position={[
+              slot.position[0] + 0.35,
+              slot.position[1] + 0.76,
+              slot.position[2] - 0.05,
+            ]}
+          />
+          {/* Laptop on center of desk */}
+          <Laptop
+            position={[
+              slot.position[0] - 0.05,
+              slot.position[1] + 0.76,
+              slot.position[2] + 0.05,
+            ]}
+          />
+        </group>
       ))}
 
       {/* Desk partitions between desks in the same row */}
@@ -155,65 +224,17 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
       <Plant position={[9, 0, 5.5]} />
       <Whiteboard position={[4, 0, -5]} rotation={0} />
 
-      {/* Working agents → at desks (first 12), overflow near coffee area */}
-      {workingAgents.map((agent, i) => {
-        let agentPos: [number, number, number]
-        if (i < DESK_SLOTS.length) {
-          const deskSlot = DESK_SLOTS[i]
-          // Position agent at the chair (slightly behind desk)
-          agentPos = [
-            deskSlot.position[0],
-            deskSlot.position[1],
-            deskSlot.position[2] + 0.55,
-          ]
-        } else {
-          // Overflow agents are placed around the coffee area
-          const overflowIndex = i - DESK_SLOTS.length
-          const angle = (overflowIndex / Math.max(workingAgents.length - DESK_SLOTS.length, 1)) * Math.PI * 2 - Math.PI / 2
-          const radius = 1.4
-          agentPos = [
-            COFFEE_AREA[0] + Math.cos(angle) * radius,
-            0,
-            COFFEE_AREA[2] + Math.sin(angle) * radius,
-          ]
-        }
+      {/* All agents — position driven by useAgentPositions hook */}
+      {agents.map((agent) => {
+        const pos = agentPositions.get(agent.id)
+        if (!pos) return null
+
         return (
           <AgentCharacter
             key={agent.id}
             agent={agent}
-            targetPosition={agentPos}
+            targetPosition={pos.targetPosition}
             currentTaskTitle={agentTaskMap.get(agent.id)}
-            theme={theme}
-            onSelect={toggleSelectedAgent}
-          />
-        )
-      })}
-
-      {/* Idle agents → around meeting table */}
-      {idleAgents.map((agent, i) => (
-        <AgentCharacter
-          key={agent.id}
-          agent={agent}
-          targetPosition={getMeetingSeatPosition(i, idleAgents.length)}
-          theme={theme}
-          onSelect={toggleSelectedAgent}
-        />
-      ))}
-
-      {/* Offline agents → at remaining desks, transparent */}
-      {offlineAgents.map((agent, i) => {
-        const slotIndex = (workingAgents.length + i) % DESK_SLOTS.length
-        const deskSlot = DESK_SLOTS[slotIndex]
-        const agentPos: [number, number, number] = [
-          deskSlot.position[0],
-          deskSlot.position[1],
-          deskSlot.position[2] + 0.55,
-        ]
-        return (
-          <AgentCharacter
-            key={agent.id}
-            agent={agent}
-            targetPosition={agentPos}
             theme={theme}
             onSelect={toggleSelectedAgent}
           />
