@@ -106,7 +106,7 @@ export function AgentNameLabel({ name, role, status, taskTitle, theme }: AgentNa
       <Billboard follow lockX={false} lockY={false} lockZ={false}>
         {/* Background — rounded box */}
         {(() => {
-          const bgW = Math.max(name.length * 0.14 + 0.3, role.length * 0.09 + 0.3, 1.0)
+          const bgW = Math.max(name.length * 0.12 + 0.15, role.length * 0.07 + 0.15, 0.6)
           return (
             <RoundedBox
               args={[bgW, 0.55, 0.02]}
