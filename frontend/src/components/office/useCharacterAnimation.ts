@@ -13,13 +13,13 @@ export type AnimState =
   | 'standing_up'
 
 export interface BodyPartRefs {
-  head: React.RefObject<THREE.Mesh>
-  armL: React.RefObject<THREE.Mesh>
-  armR: React.RefObject<THREE.Mesh>
+  head: React.RefObject<THREE.Group>
+  armL: React.RefObject<THREE.Group>
+  armR: React.RefObject<THREE.Group>
   handL: React.RefObject<THREE.Mesh>
   handR: React.RefObject<THREE.Mesh>
-  legL: React.RefObject<THREE.Mesh>
-  legR: React.RefObject<THREE.Mesh>
+  legL: React.RefObject<THREE.Group>
+  legR: React.RefObject<THREE.Group>
   shoeL: React.RefObject<THREE.Mesh>
   shoeR: React.RefObject<THREE.Mesh>
   torso: React.RefObject<THREE.Mesh>
@@ -40,9 +40,9 @@ const REST = {
   shoeL:     { pos: [-0.07, 0.02, 0.01],rot: [0, 0, 0] },
   shoeR:     { pos: [0.07, 0.02, 0.01], rot: [0, 0, 0] },
   torso:     { pos: [0, 0.35, 0],       rot: [0, 0, 0] },
-  hairGroup: { pos: [0, 0.84, 0],       rot: [0, 0, 0] },
-  eyeL:      { pos: [-0.04, 0.72, 0.12],rot: [0, 0, 0] },
-  eyeR:      { pos: [0.04, 0.72, 0.12], rot: [0, 0, 0] },
+  hairGroup: { pos: [0, 0.7, 0],        rot: [0, 0, 0] },
+  eyeL:      { pos: [-0.055, 0.72, 0.121],rot: [0, 0, 0] },
+  eyeR:      { pos: [0.055, 0.72, 0.121], rot: [0, 0, 0] },
 } as const
 
 // Seated pose — absolute positions (group y stays at 0).
@@ -55,9 +55,9 @@ const REST = {
 const SEATED = {
   torso:     { pos: [0, 0.35, 0],            rot: [-0.05, 0, 0] },
   head:      { pos: [0, 0.60, 0.01],         rot: [-0.1, 0, 0] },
-  hairGroup: { pos: [0, 0.74, 0.01],         rot: [-0.1, 0, 0] },
-  eyeL:      { pos: [-0.04, 0.62, 0.13],     rot: [0, 0, 0] },
-  eyeR:      { pos: [0.04, 0.62, 0.13],      rot: [0, 0, 0] },
+  hairGroup: { pos: [0, 0.60, 0.01],         rot: [-0.1, 0, 0] },
+  eyeL:      { pos: [-0.055, 0.62, 0.131],   rot: [0, 0, 0] },
+  eyeR:      { pos: [0.055, 0.62, 0.131],    rot: [0, 0, 0] },
   armL:      { pos: [-0.22, 0.32, 0.1],      rot: [-0.6, 0, 0] },
   armR:      { pos: [0.22, 0.32, 0.1],       rot: [-0.6, 0, 0] },
   handL:     { pos: [-0.15, 0.22, 0.2],      rot: [-0.4, 0, 0] },
@@ -89,13 +89,13 @@ function lerpV3(
 // ---------------------------------------------------------------------------
 export function useCharacterAnimation() {
   const refs: BodyPartRefs = {
-    head: useRef<THREE.Mesh>(null!),
-    armL: useRef<THREE.Mesh>(null!),
-    armR: useRef<THREE.Mesh>(null!),
+    head: useRef<THREE.Group>(null!),
+    armL: useRef<THREE.Group>(null!),
+    armR: useRef<THREE.Group>(null!),
     handL: useRef<THREE.Mesh>(null!),
     handR: useRef<THREE.Mesh>(null!),
-    legL: useRef<THREE.Mesh>(null!),
-    legR: useRef<THREE.Mesh>(null!),
+    legL: useRef<THREE.Group>(null!),
+    legR: useRef<THREE.Group>(null!),
     shoeL: useRef<THREE.Mesh>(null!),
     shoeR: useRef<THREE.Mesh>(null!),
     torso: useRef<THREE.Mesh>(null!),
@@ -164,19 +164,7 @@ function animateWalking(r: BodyPartRefs, t: number, alpha: number) {
     }, alpha)
   }
 
-  // Shoes follow legs
-  if (r.shoeL.current) {
-    lerpV3(r.shoeL.current, {
-      pos: [REST.shoeL.pos[0], REST.shoeL.pos[1] + bounce, REST.shoeL.pos[2]],
-      rot: [legSwing * 0.5, 0, 0],
-    }, alpha)
-  }
-  if (r.shoeR.current) {
-    lerpV3(r.shoeR.current, {
-      pos: [REST.shoeR.pos[0], REST.shoeR.pos[1] + bounce, REST.shoeR.pos[2]],
-      rot: [-legSwing * 0.5, 0, 0],
-    }, alpha)
-  }
+  // Shoes are children of legs — follow automatically
 
   // Arms swing opposite to legs
   if (r.armL.current) {
@@ -192,19 +180,7 @@ function animateWalking(r: BodyPartRefs, t: number, alpha: number) {
     }, alpha)
   }
 
-  // Hands follow arms
-  if (r.handL.current) {
-    lerpV3(r.handL.current, {
-      pos: [REST.handL.pos[0], REST.handL.pos[1], REST.handL.pos[2] + Math.sin(walkCycle) * 0.04],
-      rot: [-armSwing * 0.6, 0, 0],
-    }, alpha)
-  }
-  if (r.handR.current) {
-    lerpV3(r.handR.current, {
-      pos: [REST.handR.pos[0], REST.handR.pos[1], REST.handR.pos[2] - Math.sin(walkCycle) * 0.04],
-      rot: [armSwing * 0.6, 0, 0],
-    }, alpha)
-  }
+  // Hands are children of arms — follow automatically
 
   // Torso slight bounce
   if (r.torso.current) {
@@ -222,27 +198,7 @@ function animateWalking(r: BodyPartRefs, t: number, alpha: number) {
     }, alpha)
   }
 
-  // Hair follows head
-  if (r.hairGroup.current) {
-    lerpV3(r.hairGroup.current, {
-      pos: [REST.hairGroup.pos[0], REST.hairGroup.pos[1] + bounce, REST.hairGroup.pos[2]],
-      rot: [0, 0, 0],
-    }, alpha)
-  }
-
-  // Eyes follow head
-  if (r.eyeL.current) {
-    lerpV3(r.eyeL.current, {
-      pos: [REST.eyeL.pos[0], REST.eyeL.pos[1] + bounce, REST.eyeL.pos[2]],
-      rot: [0, 0, 0],
-    }, alpha)
-  }
-  if (r.eyeR.current) {
-    lerpV3(r.eyeR.current, {
-      pos: [REST.eyeR.pos[0], REST.eyeR.pos[1] + bounce, REST.eyeR.pos[2]],
-      rot: [0, 0, 0],
-    }, alpha)
-  }
+  // Hair & eyes are children of head group — they follow automatically
 }
 
 // ---------------------------------------------------------------------------
@@ -278,19 +234,7 @@ function animateSittingTyping(r: BodyPartRefs, t: number, alpha: number, seed: n
     }, alpha)
   }
 
-  // Hands typing — up/down motion
-  if (r.handL.current) {
-    lerpV3(r.handL.current, {
-      pos: [SEATED.handL.pos[0], SEATED.handL.pos[1] + typeL, SEATED.handL.pos[2]],
-      rot: SEATED.handL.rot,
-    }, alpha)
-  }
-  if (r.handR.current) {
-    lerpV3(r.handR.current, {
-      pos: [SEATED.handR.pos[0], SEATED.handR.pos[1] + typeR, SEATED.handR.pos[2]],
-      rot: SEATED.handR.rot,
-    }, alpha)
-  }
+  // Hands are children of arms — follow automatically
 
   // Head — look at monitor, occasional turn
   if (r.head.current) {
@@ -299,14 +243,7 @@ function animateSittingTyping(r: BodyPartRefs, t: number, alpha: number, seed: n
       rot: [SEATED.head.rot[0], headTurn, 0],
     }, alpha)
   }
-  if (r.hairGroup.current) {
-    lerpV3(r.hairGroup.current, {
-      pos: SEATED.hairGroup.pos,
-      rot: [SEATED.hairGroup.rot[0], headTurn, 0],
-    }, alpha)
-  }
-  if (r.eyeL.current) lerpV3(r.eyeL.current, SEATED.eyeL, alpha)
-  if (r.eyeR.current) lerpV3(r.eyeR.current, SEATED.eyeR, alpha)
+  // Hair & eyes are children of head — follow automatically
 }
 
 // ---------------------------------------------------------------------------
@@ -352,24 +289,12 @@ function animateSittingIdle(r: BodyPartRefs, t: number, alpha: number, seed: num
         rot: [-0.8, -0.3, 0],
       }, alpha * 0.5)
     }
-    if (r.handL.current) {
-      lerpV3(r.handL.current, {
-        pos: [-0.05, SEATED.handL.pos[1] + 0.06, 0.1],
-        rot: [-0.5, 0.2, 0],
-      }, alpha * 0.5)
-    }
-    if (r.handR.current) {
-      lerpV3(r.handR.current, {
-        pos: [0.05, SEATED.handR.pos[1] + 0.06, 0.1],
-        rot: [-0.5, -0.2, 0],
-      }, alpha * 0.5)
-    }
+    // Hands are children of arms — follow automatically
   } else {
     // Arms resting on desk
     if (r.armL.current) lerpV3(r.armL.current, SEATED.armL, alpha)
     if (r.armR.current) lerpV3(r.armR.current, SEATED.armR, alpha)
-    if (r.handL.current) lerpV3(r.handL.current, SEATED.handL, alpha)
-    if (r.handR.current) lerpV3(r.handR.current, SEATED.handR, alpha)
+    // Hands are children of arms — follow automatically
   }
 
   // Head — look around
@@ -379,14 +304,7 @@ function animateSittingIdle(r: BodyPartRefs, t: number, alpha: number, seed: num
       rot: [SEATED.head.rot[0] + leanBack * 0.5, headYaw, 0],
     }, alpha)
   }
-  if (r.hairGroup.current) {
-    lerpV3(r.hairGroup.current, {
-      pos: SEATED.hairGroup.pos,
-      rot: [SEATED.hairGroup.rot[0] + leanBack * 0.5, headYaw, 0],
-    }, alpha)
-  }
-  if (r.eyeL.current) lerpV3(r.eyeL.current, SEATED.eyeL, alpha)
-  if (r.eyeR.current) lerpV3(r.eyeR.current, SEATED.eyeR, alpha)
+  // Hair & eyes are children of head — follow automatically
 }
 
 // ---------------------------------------------------------------------------
@@ -463,35 +381,7 @@ function animateStandingIdle(r: BodyPartRefs, t: number, alpha: number, seed: nu
     }
   }
 
-  // Hands follow arms
-  if (r.handL.current) {
-    if (gestureArm) {
-      const raiseAmt = (gestureCycle - 0.7) / 0.3
-      lerpV3(r.handL.current, {
-        pos: [-0.22, REST.handL.pos[1] + raiseAmt * 0.12, 0.08],
-        rot: [-raiseAmt * 0.4, 0, 0],
-      }, alpha)
-    } else {
-      lerpV3(r.handL.current, {
-        pos: [REST.handL.pos[0] + sway, REST.handL.pos[1] + breathe, REST.handL.pos[2]],
-        rot: REST.handL.rot,
-      }, alpha)
-    }
-  }
-  if (r.handR.current) {
-    if (gestureArm2) {
-      const raiseAmt = (-gestureCycle - 0.7) / 0.3
-      lerpV3(r.handR.current, {
-        pos: [0.22, REST.handR.pos[1] + raiseAmt * 0.12, 0.08],
-        rot: [-raiseAmt * 0.4, 0, 0],
-      }, alpha)
-    } else {
-      lerpV3(r.handR.current, {
-        pos: [REST.handR.pos[0] + sway, REST.handR.pos[1] + breathe, REST.handR.pos[2]],
-        rot: REST.handR.rot,
-      }, alpha)
-    }
-  }
+  // Hands are children of arms — follow automatically
 
   // Head
   if (r.head.current) {
@@ -500,24 +390,7 @@ function animateStandingIdle(r: BodyPartRefs, t: number, alpha: number, seed: nu
       rot: [headPitch, headYaw, 0],
     }, alpha)
   }
-  if (r.hairGroup.current) {
-    lerpV3(r.hairGroup.current, {
-      pos: [REST.hairGroup.pos[0] + sway, REST.hairGroup.pos[1] + breathe, REST.hairGroup.pos[2]],
-      rot: [headPitch, headYaw, 0],
-    }, alpha)
-  }
-  if (r.eyeL.current) {
-    lerpV3(r.eyeL.current, {
-      pos: [REST.eyeL.pos[0] + sway, REST.eyeL.pos[1] + breathe, REST.eyeL.pos[2]],
-      rot: REST.eyeL.rot,
-    }, alpha)
-  }
-  if (r.eyeR.current) {
-    lerpV3(r.eyeR.current, {
-      pos: [REST.eyeR.pos[0] + sway, REST.eyeR.pos[1] + breathe, REST.eyeR.pos[2]],
-      rot: REST.eyeR.rot,
-    }, alpha)
-  }
+  // Hair & eyes are children of head — follow automatically
 }
 
 // ---------------------------------------------------------------------------

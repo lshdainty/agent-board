@@ -391,36 +391,29 @@ export function AgentCharacter({
       onPointerOver={onPointerOver}
       onPointerOut={onPointerOut}
     >
-      {/* Head */}
-      <mesh ref={refs.head} position={[0, 0.7, 0]} castShadow>
-        <sphereGeometry args={[0.14, 16, 16]} />
-        <meshStandardMaterial
-          color="#e8d5c4"
-          transparent={isOffline}
-          opacity={opacity}
-        />
-      </mesh>
+      {/* Head group — head + eyes + hair move together */}
+      <group ref={refs.head} position={[0, 0.7, 0]}>
+        {/* Head box */}
+        <mesh castShadow>
+          <boxGeometry args={[0.24, 0.24, 0.24]} />
+          <meshStandardMaterial
+            color="#e8d5c4"
+            transparent={isOffline}
+            opacity={opacity}
+          />
+        </mesh>
 
-      {/* Eyes */}
-      <mesh ref={refs.eyeL} position={[-0.04, 0.72, 0.12]}>
-        <sphereGeometry args={[0.02, 8, 8]} />
-        <meshStandardMaterial
-          color="#000000"
-          transparent={isOffline}
-          opacity={opacity}
-        />
-      </mesh>
-      <mesh ref={refs.eyeR} position={[0.04, 0.72, 0.12]}>
-        <sphereGeometry args={[0.02, 8, 8]} />
-        <meshStandardMaterial
-          color="#000000"
-          transparent={isOffline}
-          opacity={opacity}
-        />
-      </mesh>
+        {/* Eyes — local to head center */}
+        <mesh position={[-0.055, 0.02, 0.121]}>
+          <boxGeometry args={[0.035, 0.035, 0.01]} />
+          <meshStandardMaterial color="#1a1a1a" transparent={isOffline} opacity={opacity} />
+        </mesh>
+        <mesh position={[0.055, 0.02, 0.121]}>
+          <boxGeometry args={[0.035, 0.035, 0.01]} />
+          <meshStandardMaterial color="#1a1a1a" transparent={isOffline} opacity={opacity} />
+        </mesh>
 
-      {/* Hair */}
-      <group ref={refs.hairGroup} position={[0, 0.72, 0]}>
+        {/* Hair — local to head center */}
         <AgentHair
           style={appearance.hairStyle}
           color={appearance.hairColor}
@@ -438,81 +431,53 @@ export function AgentCharacter({
         />
       </mesh>
 
-      {/* Left Arm */}
-      <mesh ref={refs.armL} position={[-0.22, 0.35, 0]} castShadow>
-        <boxGeometry args={[0.08, 0.28, 0.1]} />
-        <meshStandardMaterial
-          color={appearance.shirtColor}
-          transparent={isOffline}
-          opacity={opacity}
-        />
-      </mesh>
-      {/* Right Arm */}
-      <mesh ref={refs.armR} position={[0.22, 0.35, 0]} castShadow>
-        <boxGeometry args={[0.08, 0.28, 0.1]} />
-        <meshStandardMaterial
-          color={appearance.shirtColor}
-          transparent={isOffline}
-          opacity={opacity}
-        />
-      </mesh>
+      {/* Left Arm + Hand (hand is child of arm) */}
+      <group ref={refs.armL} position={[-0.22, 0.35, 0]}>
+        <mesh castShadow>
+          <boxGeometry args={[0.08, 0.28, 0.1]} />
+          <meshStandardMaterial color={appearance.shirtColor} transparent={isOffline} opacity={opacity} />
+        </mesh>
+        {/* Hand — local to arm center. arm bottom = -0.14 */}
+        <mesh position={[0, -0.17, 0]} castShadow>
+          <boxGeometry args={[0.07, 0.06, 0.08]} />
+          <meshStandardMaterial color="#e8d5c4" transparent={isOffline} opacity={opacity} />
+        </mesh>
+      </group>
+      {/* Right Arm + Hand */}
+      <group ref={refs.armR} position={[0.22, 0.35, 0]}>
+        <mesh castShadow>
+          <boxGeometry args={[0.08, 0.28, 0.1]} />
+          <meshStandardMaterial color={appearance.shirtColor} transparent={isOffline} opacity={opacity} />
+        </mesh>
+        <mesh position={[0, -0.17, 0]} castShadow>
+          <boxGeometry args={[0.07, 0.06, 0.08]} />
+          <meshStandardMaterial color="#e8d5c4" transparent={isOffline} opacity={opacity} />
+        </mesh>
+      </group>
 
-      {/* Left Hand */}
-      <mesh ref={refs.handL} position={[-0.22, 0.18, 0]} castShadow>
-        <sphereGeometry args={[0.04, 8, 8]} />
-        <meshStandardMaterial
-          color="#e8d5c4"
-          transparent={isOffline}
-          opacity={opacity}
-        />
-      </mesh>
-      {/* Right Hand */}
-      <mesh ref={refs.handR} position={[0.22, 0.18, 0]} castShadow>
-        <sphereGeometry args={[0.04, 8, 8]} />
-        <meshStandardMaterial
-          color="#e8d5c4"
-          transparent={isOffline}
-          opacity={opacity}
-        />
-      </mesh>
-
-      {/* Left Leg */}
-      <mesh ref={refs.legL} position={[-0.07, 0.1, 0]} castShadow>
-        <boxGeometry args={[0.1, 0.22, 0.12]} />
-        <meshStandardMaterial
-          color={appearance.pantsColor}
-          transparent={isOffline}
-          opacity={opacity}
-        />
-      </mesh>
-      {/* Right Leg */}
-      <mesh ref={refs.legR} position={[0.07, 0.1, 0]} castShadow>
-        <boxGeometry args={[0.1, 0.22, 0.12]} />
-        <meshStandardMaterial
-          color={appearance.pantsColor}
-          transparent={isOffline}
-          opacity={opacity}
-        />
-      </mesh>
-
-      {/* Left Shoe */}
-      <mesh ref={refs.shoeL} position={[-0.07, 0.02, 0.01]} castShadow>
-        <boxGeometry args={[0.1, 0.04, 0.14]} />
-        <meshStandardMaterial
-          color="#1a1a2e"
-          transparent={isOffline}
-          opacity={opacity}
-        />
-      </mesh>
-      {/* Right Shoe */}
-      <mesh ref={refs.shoeR} position={[0.07, 0.02, 0.01]} castShadow>
-        <boxGeometry args={[0.1, 0.04, 0.14]} />
-        <meshStandardMaterial
-          color="#1a1a2e"
-          transparent={isOffline}
-          opacity={opacity}
-        />
-      </mesh>
+      {/* Left Leg + Shoe (shoe is child of leg) */}
+      <group ref={refs.legL} position={[-0.07, 0.1, 0]}>
+        <mesh castShadow>
+          <boxGeometry args={[0.1, 0.22, 0.12]} />
+          <meshStandardMaterial color={appearance.pantsColor} transparent={isOffline} opacity={opacity} />
+        </mesh>
+        {/* Shoe — local to leg center. leg bottom = -0.11 */}
+        <mesh position={[0, -0.11, 0.01]} castShadow>
+          <boxGeometry args={[0.1, 0.04, 0.14]} />
+          <meshStandardMaterial color="#1a1a2e" transparent={isOffline} opacity={opacity} />
+        </mesh>
+      </group>
+      {/* Right Leg + Shoe */}
+      <group ref={refs.legR} position={[0.07, 0.1, 0]}>
+        <mesh castShadow>
+          <boxGeometry args={[0.1, 0.22, 0.12]} />
+          <meshStandardMaterial color={appearance.pantsColor} transparent={isOffline} opacity={opacity} />
+        </mesh>
+        <mesh position={[0, -0.11, 0.01]} castShadow>
+          <boxGeometry args={[0.1, 0.04, 0.14]} />
+          <meshStandardMaterial color="#1a1a2e" transparent={isOffline} opacity={opacity} />
+        </mesh>
+      </group>
 
       {/* Status indicator */}
       <mesh position={[0, 0.98, 0]}>

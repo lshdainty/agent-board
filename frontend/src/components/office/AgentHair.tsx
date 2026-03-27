@@ -7,83 +7,124 @@ interface AgentHairProps {
   opacity: number
 }
 
+/**
+ * Hair is a CHILD of the head group (center [0,0.7,0]).
+ * So all coords here are relative to head center.
+ * Head is a box 0.24x0.24x0.24.
+ * Head local top = +0.12, bottom = -0.12, front = +0.12, back = -0.12.
+ * Hair sits ON TOP of head: bottom of hair = local y 0.12.
+ */
 function AgentHairInner({ style, color, opacity }: AgentHairProps) {
   const transparent = opacity < 1
+  const matProps = { color, transparent, opacity }
+  // Head surface positions (local)
+  const TOP = 0.12
+  const BACK = -0.12
+  const SIDE = 0.12
 
   switch (style) {
-    case 'short':
+    case 'short': {
+      // Thin slab sitting on head top
+      const h = 0.05
       return (
-        <mesh position={[0, 0.04, -0.02]} castShadow>
-          <sphereGeometry args={[0.12, 8, 8]} />
-          <meshStandardMaterial color={color} transparent={transparent} opacity={opacity} />
+        <mesh position={[0, TOP + h / 2, 0]} castShadow>
+          <boxGeometry args={[0.245, h, 0.245]} />
+          <meshStandardMaterial {...matProps} />
         </mesh>
       )
+    }
 
-    case 'long':
+    case 'long': {
+      const h = 0.05
       return (
         <group>
-          <mesh position={[0, 0.04, -0.02]} castShadow>
-            <sphereGeometry args={[0.12, 8, 8]} />
-            <meshStandardMaterial color={color} transparent={transparent} opacity={opacity} />
+          {/* Top slab */}
+          <mesh position={[0, TOP + h / 2, 0]} castShadow>
+            <boxGeometry args={[0.245, h, 0.245]} />
+            <meshStandardMaterial {...matProps} />
           </mesh>
-          <mesh position={[0, -0.05, -0.08]} castShadow>
-            <boxGeometry args={[0.1, 0.15, 0.06]} />
-            <meshStandardMaterial color={color} transparent={transparent} opacity={opacity} />
+          {/* Back curtain — from head back, hanging down */}
+          <mesh position={[0, -0.02, BACK - 0.015]} castShadow>
+            <boxGeometry args={[0.245, 0.24, 0.03]} />
+            <meshStandardMaterial {...matProps} />
+          </mesh>
+          {/* Side L */}
+          <mesh position={[-(SIDE + 0.015), 0, 0]} castShadow>
+            <boxGeometry args={[0.03, 0.2, 0.2]} />
+            <meshStandardMaterial {...matProps} />
+          </mesh>
+          {/* Side R */}
+          <mesh position={[SIDE + 0.015, 0, 0]} castShadow>
+            <boxGeometry args={[0.03, 0.2, 0.2]} />
+            <meshStandardMaterial {...matProps} />
           </mesh>
         </group>
       )
+    }
 
-    case 'buzz':
+    case 'buzz': {
+      const h = 0.025
       return (
-        <mesh position={[0, 0.02, 0]} castShadow>
-          <sphereGeometry args={[0.135, 8, 8]} />
-          <meshStandardMaterial color={color} transparent={transparent} opacity={opacity} />
+        <mesh position={[0, TOP + h / 2, 0]} castShadow>
+          <boxGeometry args={[0.243, h, 0.243]} />
+          <meshStandardMaterial {...matProps} />
         </mesh>
       )
+    }
 
-    case 'hat':
+    case 'hat': {
+      const brimH = 0.025
+      const bodyH = 0.09
       return (
         <group>
-          {/* Hat top */}
-          <mesh position={[0, 0.04, 0]} castShadow>
-            <cylinderGeometry args={[0.1, 0.1, 0.08, 8]} />
-            <meshStandardMaterial color={color} transparent={transparent} opacity={opacity} />
+          {/* Brim flush on head */}
+          <mesh position={[0, TOP + brimH / 2, 0]} castShadow>
+            <boxGeometry args={[0.32, brimH, 0.32]} />
+            <meshStandardMaterial {...matProps} />
           </mesh>
-          {/* Brim */}
-          <mesh position={[0, 0, 0]} castShadow>
-            <cylinderGeometry args={[0.15, 0.15, 0.02, 8]} />
-            <meshStandardMaterial color={color} transparent={transparent} opacity={opacity} />
+          {/* Body on brim */}
+          <mesh position={[0, TOP + brimH + bodyH / 2, 0]} castShadow>
+            <boxGeometry args={[0.24, bodyH, 0.24]} />
+            <meshStandardMaterial {...matProps} />
           </mesh>
         </group>
       )
+    }
 
-    case 'ponytail':
+    case 'ponytail': {
+      const h = 0.05
       return (
         <group>
-          <mesh position={[0, 0.04, -0.02]} castShadow>
-            <sphereGeometry args={[0.12, 8, 8]} />
-            <meshStandardMaterial color={color} transparent={transparent} opacity={opacity} />
+          {/* Top */}
+          <mesh position={[0, TOP + h / 2, 0]} castShadow>
+            <boxGeometry args={[0.245, h, 0.245]} />
+            <meshStandardMaterial {...matProps} />
           </mesh>
-          <mesh position={[0, -0.05, -0.12]} castShadow>
-            <sphereGeometry args={[0.06, 8, 8]} />
-            <meshStandardMaterial color={color} transparent={transparent} opacity={opacity} />
+          {/* Ponytail behind head */}
+          <mesh position={[0, -0.06, BACK - 0.04]} castShadow>
+            <boxGeometry args={[0.06, 0.1, 0.05]} />
+            <meshStandardMaterial {...matProps} />
           </mesh>
         </group>
       )
+    }
 
-    case 'mohawk':
+    case 'mohawk': {
+      const h = 0.1
       return (
-        <mesh position={[0, 0.08, 0]} castShadow>
-          <boxGeometry args={[0.04, 0.1, 0.12]} />
-          <meshStandardMaterial color={color} transparent={transparent} opacity={opacity} />
+        <mesh position={[0, TOP + h / 2, 0]} castShadow>
+          <boxGeometry args={[0.05, h, 0.16]} />
+          <meshStandardMaterial {...matProps} />
         </mesh>
       )
+    }
 
     case 'afro':
+      // Bigger box wrapping head
       return (
-        <mesh position={[0, 0.03, 0]} castShadow>
-          <sphereGeometry args={[0.18, 8, 8]} />
-          <meshStandardMaterial color={color} transparent={transparent} opacity={opacity} />
+        <mesh position={[0, 0.04, 0]} castShadow>
+          <boxGeometry args={[0.3, 0.3, 0.3]} />
+          <meshStandardMaterial {...matProps} />
         </mesh>
       )
   }
