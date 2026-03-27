@@ -88,24 +88,25 @@ function ActivityRow({ activity, isNew }: {
 export function ActivityTab({ projectId }: ActivityTabProps) {
   const { settings } = useSettings();
   const { data: activities = [] } = useActivities(projectId, settings.activityLogCount);
-  const prevCountRef = useRef(activities.length);
+  const prevLatestIdRef = useRef(activities[0]?.id ?? 0);
   const [newIds, setNewIds] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    if (activities.length > prevCountRef.current) {
-      const newCount = activities.length - prevCountRef.current;
+    const latestId = activities[0]?.id ?? 0;
+    if (latestId > prevLatestIdRef.current) {
       const ids = new Set<number>();
-      for (let i = 0; i < newCount; i++) {
-        ids.add(activities[i].id);
+      for (const a of activities) {
+        if (a.id > prevLatestIdRef.current) ids.add(a.id);
+        else break;
       }
       setNewIds(ids);
 
       const timer = setTimeout(() => setNewIds(new Set()), 600);
-      prevCountRef.current = activities.length;
+      prevLatestIdRef.current = latestId;
       return () => clearTimeout(timer);
     }
-    prevCountRef.current = activities.length;
+    prevLatestIdRef.current = latestId;
   }, [activities]);
 
   const filteredActivities = searchQuery

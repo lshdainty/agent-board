@@ -97,9 +97,10 @@ export function findPath(
   cellSize: number,
   gridOrigin: [number, number],
 ): [number, number, number][] {
-  const cols = grid.length
+  const gridCopy = grid.map(row => [...row])
+  const cols = gridCopy.length
   if (cols === 0) return []
-  const rows = grid[0].length
+  const rows = gridCopy[0].length
 
   const [sx, sz] = worldToGrid(startWorld[0], startWorld[2], cellSize, gridOrigin)
   const [ex, ez] = worldToGrid(endWorld[0], endWorld[2], cellSize, gridOrigin)
@@ -113,21 +114,19 @@ export function findPath(
 
   // If start or end is not walkable, temporarily make them AND neighbors walkable
   // (agent needs to leave/enter obstacle areas like desk chairs)
-  const restored: [number, number][] = []
   const forceWalkable = (cx: number, cz: number) => {
     for (let dx = -1; dx <= 1; dx++) {
       for (let dz = -1; dz <= 1; dz++) {
         const nx = cx + dx
         const nz = cz + dz
-        if (nx >= 0 && nx < cols && nz >= 0 && nz < rows && !grid[nx][nz]) {
-          grid[nx][nz] = true
-          restored.push([nx, nz])
+        if (nx >= 0 && nx < cols && nz >= 0 && nz < rows && !gridCopy[nx][nz]) {
+          gridCopy[nx][nz] = true
         }
       }
     }
   }
-  if (!grid[startX]?.[startZ]) forceWalkable(startX, startZ)
-  if (!grid[endX]?.[endZ]) forceWalkable(endX, endZ)
+  if (!gridCopy[startX]?.[startZ]) forceWalkable(startX, startZ)
+  if (!gridCopy[endX]?.[endZ]) forceWalkable(endX, endZ)
 
   // Already at destination
   if (startX === endX && startZ === endZ) return [endWorld]

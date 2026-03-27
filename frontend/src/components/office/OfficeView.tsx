@@ -10,7 +10,7 @@ interface OfficeViewProps {
   theme: 'light' | 'dark'
 }
 
-const BG = { light: '#e8ecf4', dark: '#141828' } as const
+const BG = { light: '#e8ecf4', dark: '#080c18' } as const
 
 // Loading spinner for 3D scene
 function SceneLoadingFallback({ theme }: { theme: 'light' | 'dark' }) {

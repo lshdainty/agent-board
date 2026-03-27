@@ -418,7 +418,8 @@ function Dashboard() {
   const { data: projects } = useProjects();
   const [projectId, setProjectId] = useState<number>(() => {
     const saved = localStorage.getItem('selectedProjectId');
-    return saved ? Number(saved) : 1;
+    const num = Number(saved);
+    return !isNaN(num) && num > 0 ? num : 1;
   });
   const [activeView, setActiveView] = useState<ViewMode>('office');
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -467,7 +468,7 @@ function Dashboard() {
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
       // Skip if any modal is open
-      if (showCreateProject || showEditProject) return;
+      if (showCreateProject || showEditProject || showShortcutHelp) return;
 
       switch (e.key) {
         case '1':
@@ -503,7 +504,7 @@ function Dashboard() {
           break;
       }
     },
-    [showCreateProject, showEditProject, toggleTheme, setSelectedAgentId],
+    [showCreateProject, showEditProject, showShortcutHelp, toggleTheme, setSelectedAgentId],
   );
 
   useEffect(() => {

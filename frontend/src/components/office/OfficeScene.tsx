@@ -122,7 +122,7 @@ export function OfficeScene({ agents, tasks, theme }: OfficeSceneProps) {
       <pointLight position={[7, 3.5, -2]} color="#ffeedd" intensity={isDark ? 0.8 : 0.3} distance={12} />
 
       <OfficeLayout agents={agents} tasks={tasks} theme={theme} />
-      <AgentEffectsLayer agents={agents} />
+      <AgentEffectsLayer agents={agents} tasks={tasks} />
     </>
   )
 }

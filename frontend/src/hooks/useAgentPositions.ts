@@ -173,5 +173,5 @@ export function useAgentPositions(
     }
 
     return positions
-  }, [agents, _tasks, updateStatusChanges])
+  }, [agents, updateStatusChanges])
 }

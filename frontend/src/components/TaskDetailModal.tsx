@@ -27,7 +27,6 @@ const PRIORITY_OPTIONS: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
 interface TaskDetailModalProps {
   task: Task;
   agents?: Agent[];
-  projectId?: number;
   onClose: () => void;
 }
 
