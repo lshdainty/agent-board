@@ -171,9 +171,6 @@ export function findPath(
         ([gx, gz]) => gridToWorld(gx, gz, cellSize, gridOrigin),
       )
 
-      // Restore grid
-      for (const [rx, rz] of restored) grid[rx][rz] = false
-
       // Smooth: remove redundant collinear waypoints
       return smoothPath(worldPath)
     }
@@ -187,14 +184,14 @@ export function findPath(
       const nz = current.z + dz
 
       if (nx < 0 || nx >= cols || nz < 0 || nz >= rows) continue
-      if (!grid[nx][nz]) continue
+      if (!gridCopy[nx][nz]) continue
 
       const nk = key(nx, nz)
       if (closed.has(nk)) continue
 
       // For diagonal movement, ensure both adjacent cells are walkable
       if (dx !== 0 && dz !== 0) {
-        if (!grid[current.x + dx][current.z] || !grid[current.x][current.z + dz]) {
+        if (!gridCopy[current.x + dx][current.z] || !gridCopy[current.x][current.z + dz]) {
           continue
         }
       }
@@ -216,9 +213,6 @@ export function findPath(
       })
     }
   }
-
-  // Restore grid
-  for (const [rx, rz] of restored) grid[rx][rz] = false
 
   // No path found
   return []

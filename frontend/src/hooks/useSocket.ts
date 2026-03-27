@@ -7,7 +7,9 @@ export function useSocket(projectId: number) {
   const socketRef = useRef<Socket | null>(null);
   const queryClient = useQueryClient();
   const [isConnected, setIsConnected] = useState(false);
+  const prevProjectIdRef = useRef<number | null>(null);
 
+  // Create socket connection once
   useEffect(() => {
     const socket = io('/', {
       transports: ['websocket', 'polling'],
@@ -23,6 +25,7 @@ export function useSocket(projectId: number) {
       console.log('Dashboard connected');
       setIsConnected(true);
       socket.emit('join_project', projectId);
+      prevProjectIdRef.current = projectId;
     });
 
     socket.on('disconnect', () => {
@@ -66,7 +69,20 @@ export function useSocket(projectId: number) {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [projectId, queryClient]);
+  }, [queryClient]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Switch rooms when projectId changes (without reconnecting)
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket?.connected) return;
+
+    const prevId = prevProjectIdRef.current;
+    if (prevId !== null && prevId !== projectId) {
+      socket.emit('leave_project', prevId);
+      socket.emit('join_project', projectId);
+    }
+    prevProjectIdRef.current = projectId;
+  }, [projectId]);
 
   return { socketRef, isConnected };
 }
