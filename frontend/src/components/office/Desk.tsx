@@ -9,9 +9,10 @@ interface DeskProps {
   theme: 'light' | 'dark'
   agentStatus?: AgentStatus
   hideChair?: boolean
+  partitions?: ('left' | 'right' | 'back')[]
 }
 
-export const Desk = memo(function Desk({ position, rotation = 0, theme, agentStatus, hideChair }: DeskProps) {
+export const Desk = memo(function Desk({ position, rotation = 0, theme, agentStatus, hideChair, partitions = [] }: DeskProps) {
   const isDark = theme === 'dark'
   const surface = isDark ? '#3a3f55' : '#c8a882'
   const leg = isDark ? '#2a2f45' : '#9e8268'
@@ -146,6 +147,44 @@ export const Desk = memo(function Desk({ position, rotation = 0, theme, agentSta
           <meshStandardMaterial color={chairBase} />
         </mesh>
       </group>
+
+      {/* Partitions — attached directly to desk edges */}
+      {partitions.includes('left') && (
+        <group>
+          <mesh position={[-0.73, 0.42, 0]} castShadow receiveShadow>
+            <boxGeometry args={[0.06, 0.85, 0.72]} />
+            <meshStandardMaterial color={isDark ? '#3a4565' : '#9ca3af'} roughness={1.0} metalness={0} />
+          </mesh>
+          <mesh position={[-0.73, 0.855, 0]}>
+            <boxGeometry args={[0.08, 0.025, 0.73]} />
+            <meshStandardMaterial color={isDark ? '#8890a0' : '#6b7280'} roughness={0.3} metalness={0.6} />
+          </mesh>
+        </group>
+      )}
+      {partitions.includes('right') && (
+        <group>
+          <mesh position={[0.73, 0.42, 0]} castShadow receiveShadow>
+            <boxGeometry args={[0.06, 0.85, 0.72]} />
+            <meshStandardMaterial color={isDark ? '#3a4565' : '#9ca3af'} roughness={1.0} metalness={0} />
+          </mesh>
+          <mesh position={[0.73, 0.855, 0]}>
+            <boxGeometry args={[0.08, 0.025, 0.73]} />
+            <meshStandardMaterial color={isDark ? '#8890a0' : '#6b7280'} roughness={0.3} metalness={0.6} />
+          </mesh>
+        </group>
+      )}
+      {partitions.includes('back') && (
+        <group>
+          <mesh position={[0, 0.42, -0.38]} castShadow receiveShadow>
+            <boxGeometry args={[1.42, 0.85, 0.06]} />
+            <meshStandardMaterial color={isDark ? '#3a4565' : '#9ca3af'} roughness={1.0} metalness={0} />
+          </mesh>
+          <mesh position={[0, 0.855, -0.38]}>
+            <boxGeometry args={[1.43, 0.025, 0.08]} />
+            <meshStandardMaterial color={isDark ? '#8890a0' : '#6b7280'} roughness={0.3} metalness={0.6} />
+          </mesh>
+        </group>
+      )}
     </group>
   )
 })

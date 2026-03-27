@@ -34,12 +34,12 @@ const STATUS_COLORS: Record<string, string> = {
 const PATH_CELL_SIZE = 0.25
 const obstacles: { center: [number, number]; halfSize: [number, number] }[] = []
 
-// Desks — include chair area behind desk
+// Desks — desk (1.4x0.7) + attached partitions (0.06 thick each side)
+// Total footprint per desk: ~1.52 x 0.82 + chair zone behind
 DESK_SLOTS.forEach((slot) => {
-  // Desk surface + chair zone
   obstacles.push({
     center: [slot.position[0], slot.position[2]],
-    halfSize: [0.9, 0.8],
+    halfSize: [0.8, 0.9],  // desk+partitions+chair
   })
 })
 
@@ -48,32 +48,6 @@ obstacles.push({
   center: [MEETING_CENTER[0], MEETING_CENTER[2]],
   halfSize: [1.5, 1.5],
 })
-
-// Side partitions (between desks in same row, direction="z")
-// Thicker so grid cells actually hit them
-for (let row = 0; row < 3; row++) {
-  const rowSlots = DESK_SLOTS.slice(row * 4, row * 4 + 4)
-  for (let i = 0; i < rowSlots.length - 1; i++) {
-    const midX = (rowSlots[i].position[0] + rowSlots[i + 1].position[0]) / 2
-    obstacles.push({
-      center: [midX, rowSlots[i].position[2]],
-      halfSize: [0.15, 0.8],
-    })
-  }
-}
-
-// Back partitions (between rows, direction="x")
-for (let row = 0; row < 2; row++) {
-  const currentRow = DESK_SLOTS.slice(row * 4, row * 4 + 4)
-  const nextRow = DESK_SLOTS.slice((row + 1) * 4, (row + 1) * 4 + 4)
-  const midZ = (currentRow[0].position[2] + nextRow[0].position[2]) / 2
-  for (let i = 0; i < currentRow.length; i++) {
-    obstacles.push({
-      center: [currentRow[i].position[0], midZ],
-      halfSize: [0.8, 0.15],
-    })
-  }
-}
 
 const occupancyGrid = buildOccupancyGrid(
   ROOM_WIDTH,

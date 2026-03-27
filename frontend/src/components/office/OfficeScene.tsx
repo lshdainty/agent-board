@@ -98,10 +98,10 @@ export function OfficeScene({ agents, tasks, theme }: OfficeSceneProps) {
 
       <CameraTracker agents={agents} tasks={tasks} controlsRef={controlsRef} />
 
-      <ambientLight intensity={isDark ? 0.6 : 0.8} />
+      <ambientLight intensity={isDark ? 1.0 : 0.8} />
       <directionalLight
         position={[8, 15, 8]}
-        intensity={1.0}
+        intensity={isDark ? 1.2 : 1.0}
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
@@ -111,11 +111,15 @@ export function OfficeScene({ agents, tasks, theme }: OfficeSceneProps) {
         shadow-camera-top={15}
         shadow-camera-bottom={-15}
       />
-      <directionalLight position={[-5, 8, -5]} intensity={0.4} />
+      <directionalLight position={[-5, 8, -5]} intensity={isDark ? 0.6 : 0.4} />
 
-      <pointLight position={[-1.5, 3.5, -4.5]} color="#fff5e6" intensity={isDark ? 0.6 : 0.3} />
-      <pointLight position={[-1.5, 3.5, -1.5]} color="#fff5e6" intensity={isDark ? 0.6 : 0.3} />
-      <pointLight position={[-1.5, 3.5, 1.5]} color="#fff5e6" intensity={isDark ? 0.6 : 0.3} />
+      {/* Overhead warm lights — brighter in dark mode */}
+      <pointLight position={[-4.5, 3.5, -4.5]} color="#ffeedd" intensity={isDark ? 1.2 : 0.3} distance={12} />
+      <pointLight position={[-4.5, 3.5, 0]} color="#ffeedd" intensity={isDark ? 1.2 : 0.3} distance={12} />
+      <pointLight position={[-4.5, 3.5, 3]} color="#ffeedd" intensity={isDark ? 1.0 : 0.3} distance={12} />
+      <pointLight position={[2, 3.5, -4.5]} color="#ffeedd" intensity={isDark ? 1.2 : 0.3} distance={12} />
+      <pointLight position={[2, 3.5, 0]} color="#ffeedd" intensity={isDark ? 1.2 : 0.3} distance={12} />
+      <pointLight position={[7, 3.5, -2]} color="#ffeedd" intensity={isDark ? 0.8 : 0.3} distance={12} />
 
       <OfficeLayout agents={agents} tasks={tasks} theme={theme} />
       <AgentEffectsLayer agents={agents} />

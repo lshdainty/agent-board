@@ -7,8 +7,8 @@ interface OfficeWallsProps {
 
 export const OfficeWalls = memo(function OfficeWalls({ theme }: OfficeWallsProps) {
   const isDark = theme === 'dark'
-  const wallColor = isDark ? '#1a1f35' : '#d4d8e0'
-  const edgeColor = isDark ? '#252b42' : '#b8bcc4'
+  const wallColor = isDark ? '#2d3555' : '#d4d8e0'
+  const edgeColor = isDark ? '#3a4268' : '#b8bcc4'
 
   return (
     <group>

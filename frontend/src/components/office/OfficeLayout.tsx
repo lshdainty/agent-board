@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import { OfficeFloor } from './OfficeFloor'
 import { OfficeWalls } from './OfficeWalls'
 import { Desk } from './Desk'
-import { DeskPartition } from './DeskPartition'
+// DeskPartition is now built into Desk component
 import { MeetingTable } from './MeetingTable'
 import { Bookshelf } from './Bookshelf'
 import { CoffeeArea } from './CoffeeArea'
@@ -312,12 +312,15 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
       <OfficeFloor theme={theme} />
       <OfficeWalls theme={theme} />
 
-      {/* Desks — all 12 slots, hide chair when agent is seated */}
+      {/* Desks — all 12 slots with partitions attached */}
       {DESK_SLOTS.map((slot, i) => {
-        // Check if any agent is seated at this desk
         const seated = Array.from(agentPositions.values()).some(
           (p) => p.zone === 'desk' && p.deskIndex === i
         )
+        const row = Math.floor(i / 4)
+        const col = i % 4
+        // All desks get 3-sided partitions (left, right, back) — open front for chair
+        const parts: ('left' | 'right' | 'back')[] = ['left', 'right', 'back']
         return (
           <Desk
             key={`desk-${i}`}
@@ -325,6 +328,7 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
             rotation={slot.rotation}
             theme={theme}
             hideChair={seated}
+            partitions={parts}
           />
         )
       })}
@@ -351,39 +355,7 @@ export function OfficeLayout({ agents, tasks, theme }: OfficeLayoutProps) {
         </group>
       ))}
 
-      {/* Desk partitions — side walls between desks in same row */}
-      {[0, 1, 2].map((row) => {
-        const rowSlots = DESK_SLOTS.slice(row * 4, row * 4 + 4)
-        return rowSlots.slice(0, -1).map((slot, i) => {
-          const nextSlot = rowSlots[i + 1]
-          const midX = (slot.position[0] + nextSlot.position[0]) / 2
-          return (
-            <DeskPartition
-              key={`partition-side-${row}-${i}`}
-              position={[midX, 0, slot.position[2]]}
-              width={1.4}
-              direction="z"
-              theme={theme}
-            />
-          )
-        })
-      })}
-
-      {/* Desk partitions — back walls between rows */}
-      {[0, 1].map((row) => {
-        const currentRow = DESK_SLOTS.slice(row * 4, row * 4 + 4)
-        const nextRow = DESK_SLOTS.slice((row + 1) * 4, (row + 1) * 4 + 4)
-        const midZ = (currentRow[0].position[2] + nextRow[0].position[2]) / 2
-        return currentRow.map((slot, i) => (
-          <DeskPartition
-            key={`partition-back-${row}-${i}`}
-            position={[slot.position[0], 0, midZ]}
-            width={1.4}
-            direction="x"
-            theme={theme}
-          />
-        ))
-      })}
+      {/* Partitions are now built into each Desk via the partitions prop — no standalone DeskPartitions needed */}
 
       {/* Meeting table */}
       <MeetingTable position={MEETING_CENTER} chairCount={6} theme={theme} />
