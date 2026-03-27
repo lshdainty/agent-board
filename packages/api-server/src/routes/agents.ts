@@ -92,7 +92,8 @@ router.patch('/:id', async (req, res) => {
     if (agent) {
       if (status) {
         const agentName = agent.name as string;
-        const message = `Agent ${agentName} status changed to ${status}`;
+        const statusKo: Record<string, string> = { working: '작업 중', idle: '대기 중', offline: '오프라인' };
+        const message = `${agentName} 상태가 '${statusKo[status] || status}'(으)로 변경되었습니다.`;
         await pool.execute(
           'INSERT INTO activity_logs (project_id, agent_id, action, message) VALUES (?, ?, ?, ?)',
           [agent.project_id, id, 'agent_status_changed', message]

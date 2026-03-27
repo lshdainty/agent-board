@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { useActivities } from '@/hooks/useActivities';
-import { Plus, UserCheck, RefreshCw, CheckCircle, MessageSquare, Search } from 'lucide-react';
+import { Plus, UserCheck, RefreshCw, CheckCircle, MessageSquare, Search, UserCog } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSettings } from '@/hooks/useSettings';
 import type { ComponentType } from 'react';
@@ -10,6 +10,7 @@ const ACTION_ICONS: Record<string, ComponentType<{ size?: number; className?: st
   task_claimed: UserCheck,
   task_updated: RefreshCw,
   task_completed: CheckCircle,
+  agent_status_changed: UserCog,
 };
 
 function formatRelativeTime(dateStr: string): string {
@@ -21,12 +22,12 @@ function formatRelativeTime(dateStr: string): string {
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
 
-  if (diffSec < 10) return 'just now';
-  if (diffSec < 60) return `${diffSec}s ago`;
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHour < 24) return `${diffHour}h ago`;
-  if (diffDay < 7) return `${diffDay}d ago`;
-  return new Date(dateStr).toLocaleDateString();
+  if (diffSec < 10) return '방금 전';
+  if (diffSec < 60) return `${diffSec}초 전`;
+  if (diffMin < 60) return `${diffMin}분 전`;
+  if (diffHour < 24) return `${diffHour}시간 전`;
+  if (diffDay < 7) return `${diffDay}일 전`;
+  return new Date(dateStr).toLocaleDateString('ko-KR');
 }
 
 interface ActivityTabProps {
@@ -41,15 +42,12 @@ function ActivityRow({ activity, isNew }: {
   const [relativeTime, setRelativeTime] = useState(() => formatRelativeTime(activity.created_at));
   const ref = useRef<HTMLDivElement>(null);
 
-  // Slide-in animation for new items
   useEffect(() => {
     if (isNew) {
-      // Trigger animation on next frame
       requestAnimationFrame(() => setVisible(true));
     }
   }, [isNew]);
 
-  // Update relative time every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setRelativeTime(formatRelativeTime(activity.created_at));
@@ -94,7 +92,6 @@ export function ActivityTab({ projectId }: ActivityTabProps) {
   const [newIds, setNewIds] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Track newly added activities
   useEffect(() => {
     if (activities.length > prevCountRef.current) {
       const newCount = activities.length - prevCountRef.current;
@@ -104,7 +101,6 @@ export function ActivityTab({ projectId }: ActivityTabProps) {
       }
       setNewIds(ids);
 
-      // Clear "new" status after animation
       const timer = setTimeout(() => setNewIds(new Set()), 600);
       prevCountRef.current = activities.length;
       return () => clearTimeout(timer);
@@ -124,12 +120,11 @@ export function ActivityTab({ projectId }: ActivityTabProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Search input */}
       <div className="relative">
         <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]" />
         <input
           type="text"
-          placeholder="Search activity..."
+          placeholder="활동 검색..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-8 pr-3 py-1.5 text-xs rounded-md border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-foreground)] placeholder:text-[var(--color-muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-shadow"
@@ -145,12 +140,12 @@ export function ActivityTab({ projectId }: ActivityTabProps) {
       ))}
       {activities.length === 0 && (
         <p className="text-xs text-[var(--color-muted-foreground)] text-center py-4">
-          No activity yet
+          아직 활동 내역이 없습니다
         </p>
       )}
       {activities.length > 0 && filteredActivities.length === 0 && searchQuery && (
         <p className="text-xs text-[var(--color-muted-foreground)] text-center py-4">
-          No matching activity
+          검색 결과가 없습니다
         </p>
       )}
     </div>
