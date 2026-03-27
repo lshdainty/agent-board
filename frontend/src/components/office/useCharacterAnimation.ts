@@ -30,7 +30,7 @@ export interface BodyPartRefs {
 
 // Default (standing) rest poses — local positions & rotations
 const REST = {
-  head:      { pos: [0, 0.7, 0],       rot: [0, 0, 0] },
+  head:      { pos: [0, 0.73, 0],      rot: [0, 0, 0] },
   armL:      { pos: [-0.22, 0.35, 0],   rot: [0, 0, 0] },
   armR:      { pos: [0.22, 0.35, 0],    rot: [0, 0, 0] },
   handL:     { pos: [-0.22, 0.18, 0],   rot: [0, 0, 0] },
@@ -54,8 +54,8 @@ const REST = {
 // Legs/shoes use REST-like positions (hanging straight down from the raised body).
 const SEATED = {
   torso:     { pos: [0, 0.35, 0],            rot: [-0.05, 0, 0] },
-  head:      { pos: [0, 0.60, 0.01],         rot: [-0.1, 0, 0] },
-  hairGroup: { pos: [0, 0.60, 0.01],         rot: [-0.1, 0, 0] },
+  head:      { pos: [0, 0.63, 0.01],         rot: [-0.1, 0, 0] },
+  hairGroup: { pos: [0, 0.63, 0.01],         rot: [-0.1, 0, 0] },
   eyeL:      { pos: [-0.055, 0.62, 0.131],   rot: [0, 0, 0] },
   eyeR:      { pos: [0.055, 0.62, 0.131],    rot: [0, 0, 0] },
   armL:      { pos: [-0.22, 0.32, 0.1],      rot: [-0.6, 0, 0] },

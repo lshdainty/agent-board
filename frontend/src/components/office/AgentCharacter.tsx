@@ -369,7 +369,7 @@ export function AgentCharacter({
       onPointerOut={onPointerOut}
     >
       {/* Head group — head + eyes + hair move together */}
-      <group ref={refs.head} position={[0, 0.7, 0]}>
+      <group ref={refs.head} position={[0, 0.73, 0]}>
         {/* Head box */}
         <mesh castShadow>
           <boxGeometry args={[0.24, 0.24, 0.24]} />
@@ -456,17 +456,6 @@ export function AgentCharacter({
         </mesh>
       </group>
 
-      {/* Status indicator */}
-      <mesh position={[0, 0.98, 0]}>
-        <sphereGeometry args={[0.04, 8, 8]} />
-        <meshStandardMaterial
-          color={statusColor}
-          emissive={statusColor}
-          emissiveIntensity={0.6}
-          transparent={isOffline}
-          opacity={opacity}
-        />
-      </mesh>
 
       {/* Name label */}
       <group ref={labelGroupRef}>

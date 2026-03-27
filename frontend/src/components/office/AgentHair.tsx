@@ -35,27 +35,27 @@ function AgentHairInner({ style, color, opacity }: AgentHairProps) {
     }
 
     case 'long': {
-      const h = 0.05
+      const h = 0.06
       return (
         <group>
-          {/* Top slab */}
+          {/* Top slab — slightly wider to overlap sides */}
           <mesh position={[0, TOP + h / 2, 0]} castShadow>
-            <boxGeometry args={[0.245, h, 0.245]} />
+            <boxGeometry args={[0.3, h, 0.3]} />
             <meshStandardMaterial {...matProps} />
           </mesh>
-          {/* Back curtain — from head back, hanging down */}
-          <mesh position={[0, -0.02, BACK - 0.015]} castShadow>
-            <boxGeometry args={[0.245, 0.24, 0.03]} />
+          {/* Back curtain — extends up into top slab to eliminate gap */}
+          <mesh position={[0, 0.01, BACK - 0.015]} castShadow>
+            <boxGeometry args={[0.3, 0.28, 0.04]} />
             <meshStandardMaterial {...matProps} />
           </mesh>
-          {/* Side L */}
-          <mesh position={[-(SIDE + 0.015), 0, 0]} castShadow>
-            <boxGeometry args={[0.03, 0.2, 0.2]} />
+          {/* Side L — extends up into top slab */}
+          <mesh position={[-(SIDE + 0.015), 0.01, -0.02]} castShadow>
+            <boxGeometry args={[0.04, 0.28, 0.28]} />
             <meshStandardMaterial {...matProps} />
           </mesh>
-          {/* Side R */}
-          <mesh position={[SIDE + 0.015, 0, 0]} castShadow>
-            <boxGeometry args={[0.03, 0.2, 0.2]} />
+          {/* Side R — extends up into top slab */}
+          <mesh position={[SIDE + 0.015, 0.01, -0.02]} castShadow>
+            <boxGeometry args={[0.04, 0.28, 0.28]} />
             <meshStandardMaterial {...matProps} />
           </mesh>
         </group>
