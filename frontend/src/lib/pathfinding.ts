@@ -111,8 +111,23 @@ export function findPath(
   const endX = clamp(ex, cols)
   const endZ = clamp(ez, rows)
 
-  // If start or end is not walkable, return empty
-  if (!grid[startX][startZ] || !grid[endX][endZ]) return []
+  // If start or end is not walkable, temporarily make them AND neighbors walkable
+  // (agent needs to leave/enter obstacle areas like desk chairs)
+  const restored: [number, number][] = []
+  const forceWalkable = (cx: number, cz: number) => {
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dz = -1; dz <= 1; dz++) {
+        const nx = cx + dx
+        const nz = cz + dz
+        if (nx >= 0 && nx < cols && nz >= 0 && nz < rows && !grid[nx][nz]) {
+          grid[nx][nz] = true
+          restored.push([nx, nz])
+        }
+      }
+    }
+  }
+  if (!grid[startX]?.[startZ]) forceWalkable(startX, startZ)
+  if (!grid[endX]?.[endZ]) forceWalkable(endX, endZ)
 
   // Already at destination
   if (startX === endX && startZ === endZ) return [endWorld]
@@ -157,6 +172,9 @@ export function findPath(
         ([gx, gz]) => gridToWorld(gx, gz, cellSize, gridOrigin),
       )
 
+      // Restore grid
+      for (const [rx, rz] of restored) grid[rx][rz] = false
+
       // Smooth: remove redundant collinear waypoints
       return smoothPath(worldPath)
     }
@@ -199,6 +217,9 @@ export function findPath(
       })
     }
   }
+
+  // Restore grid
+  for (const [rx, rz] of restored) grid[rx][rz] = false
 
   // No path found
   return []

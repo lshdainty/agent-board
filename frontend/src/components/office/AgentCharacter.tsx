@@ -11,7 +11,6 @@ import {
   MEETING_CENTER,
   ROOM_WIDTH,
   ROOM_DEPTH,
-  GRID_CELL_SIZE,
   GRID_ORIGIN,
 } from '@/constants/office'
 import { useCharacterAnimation, type AnimState } from './useCharacterAnimation'
@@ -31,30 +30,34 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 // Build occupancy grid once (module-level cache)
+// Use smaller grid cells for better obstacle detection
+const PATH_CELL_SIZE = 0.25
 const obstacles: { center: [number, number]; halfSize: [number, number] }[] = []
 
-// Desks
+// Desks — include chair area behind desk
 DESK_SLOTS.forEach((slot) => {
+  // Desk surface + chair zone
   obstacles.push({
     center: [slot.position[0], slot.position[2]],
-    halfSize: [0.8, 0.5],
+    halfSize: [0.9, 0.8],
   })
 })
 
 // Meeting table
 obstacles.push({
   center: [MEETING_CENTER[0], MEETING_CENTER[2]],
-  halfSize: [1.2, 1.2],
+  halfSize: [1.5, 1.5],
 })
 
 // Side partitions (between desks in same row, direction="z")
+// Thicker so grid cells actually hit them
 for (let row = 0; row < 3; row++) {
   const rowSlots = DESK_SLOTS.slice(row * 4, row * 4 + 4)
   for (let i = 0; i < rowSlots.length - 1; i++) {
     const midX = (rowSlots[i].position[0] + rowSlots[i + 1].position[0]) / 2
     obstacles.push({
       center: [midX, rowSlots[i].position[2]],
-      halfSize: [0.05, 0.7],  // thin wall along Z
+      halfSize: [0.15, 0.8],
     })
   }
 }
@@ -67,7 +70,7 @@ for (let row = 0; row < 2; row++) {
   for (let i = 0; i < currentRow.length; i++) {
     obstacles.push({
       center: [currentRow[i].position[0], midZ],
-      halfSize: [0.7, 0.05],  // thin wall along X
+      halfSize: [0.8, 0.15],
     })
   }
 }
@@ -75,7 +78,7 @@ for (let row = 0; row < 2; row++) {
 const occupancyGrid = buildOccupancyGrid(
   ROOM_WIDTH,
   ROOM_DEPTH,
-  GRID_CELL_SIZE,
+  PATH_CELL_SIZE,
   obstacles,
 )
 
@@ -228,7 +231,7 @@ export function AgentCharacter({
           occupancyGrid,
           currentPos,
           targetPosition,
-          GRID_CELL_SIZE,
+          PATH_CELL_SIZE,
           GRID_ORIGIN,
         )
         if (path.length > 0) {
