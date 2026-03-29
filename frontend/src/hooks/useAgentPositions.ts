@@ -17,7 +17,10 @@ function getDeskIndex(agentId: number): number {
  */
 function deskChairPosition(slotIndex: number): [number, number, number] {
   const slot = DESK_SLOTS[slotIndex]
-  return [slot.position[0], 0, slot.position[2] + 0.55]
+  // Target the corridor side of the desk (outside obstacle zone)
+  // so pathfinding finds a clean route without cutting through desks.
+  // The sitting animation snaps the character to the exact chair position.
+  return [slot.position[0], 0, slot.position[2] + 1.1]
 }
 
 /**
