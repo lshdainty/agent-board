@@ -34,12 +34,12 @@ const STATUS_COLORS: Record<string, string> = {
 const PATH_CELL_SIZE = 0.25
 const obstacles: { center: [number, number]; halfSize: [number, number] }[] = []
 
-// Desks — desk (1.4x0.7) + attached partitions (0.06 thick each side)
-// Total footprint per desk: ~1.52 x 0.82 + chair zone behind
+// Desks — desk (1.4x0.7) + attached partitions (0.06 each side) + chair zone
+// Desk spacing is 3 units apart. Need halfSize large enough to force corridor routing.
 DESK_SLOTS.forEach((slot) => {
   obstacles.push({
     center: [slot.position[0], slot.position[2]],
-    halfSize: [0.8, 0.9],  // desk+partitions+chair
+    halfSize: [1.3, 1.3],  // generous: blocks desk+partitions+chair area fully
   })
 })
 
