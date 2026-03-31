@@ -2,10 +2,21 @@ import { useState } from 'react';
 import { useAgents, useUpdateAgent, useDeleteAgent } from '@/hooks/useAgents';
 import { useTasks } from '@/hooks/useTasks';
 import { useActivities } from '@/hooks/useActivities';
+import { useAgentHistory } from '@/hooks/useAgentHistory';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Pencil, Trash2, Check, X } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Check, X, CheckCircle2, PlusCircle, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import type { AgentStatus } from '@/types';
+import type { AgentStatus, ActivityLog } from '@/types';
+
+const ACTION_STYLES: Record<string, { color: string; Icon: typeof CheckCircle2 }> = {
+  task_completed: { color: '#22c55e', Icon: CheckCircle2 },
+  task_created: { color: '#3b82f6', Icon: PlusCircle },
+  status_changed: { color: '#eab308', Icon: RefreshCw },
+};
+
+function getActionStyle(action: string) {
+  return ACTION_STYLES[action] || { color: '#6b7280', Icon: RefreshCw };
+}
 
 const STATUS_INDICATOR: Record<AgentStatus, string> = {
   idle: 'bg-green-400',
@@ -29,6 +40,7 @@ export function AgentDetailPanel({ agentId, projectId, onClose }: AgentDetailPan
   const { data: agents = [] } = useAgents(projectId);
   const { data: tasks = [] } = useTasks(projectId);
   const { data: activities = [] } = useActivities(projectId);
+  const { data: historyData = [] } = useAgentHistory(agentId);
   const updateAgent = useUpdateAgent();
   const deleteAgent = useDeleteAgent();
 
@@ -190,9 +202,25 @@ export function AgentDetailPanel({ agentId, projectId, onClose }: AgentDetailPan
               <span className={cn('w-3 h-3 rounded-full shrink-0', STATUS_INDICATOR[agent.status])} />
               <h3 className="font-semibold text-sm">{agent.name}</h3>
             </div>
-            <div className="flex flex-col gap-1 text-xs text-[var(--color-muted-foreground)]">
+            <div className="flex flex-col gap-1.5 text-xs text-[var(--color-muted-foreground)]">
               <span>Role: {agent.role}</span>
-              <span>Status: {STATUS_LABELS[agent.status]}</span>
+              <div className="flex items-center gap-2">
+                <span className="shrink-0">Status:</span>
+                <select
+                  value={agent.status}
+                  onChange={(e) => {
+                    const newStatus = e.target.value as AgentStatus;
+                    if (newStatus !== agent.status) {
+                      updateAgent.mutate({ agentId: agent.id, data: { status: newStatus } });
+                    }
+                  }}
+                  className="px-1.5 py-0.5 text-xs rounded-md border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+                >
+                  <option value="idle">Idle</option>
+                  <option value="working">Working</option>
+                  <option value="offline">Offline</option>
+                </select>
+              </div>
               <span>Completed: {completedCount} tasks</span>
               {lastActivity && (
                 <span>
@@ -247,23 +275,74 @@ export function AgentDetailPanel({ agentId, projectId, onClose }: AgentDetailPan
         </div>
       )}
 
-      {/* Recent activity */}
+      {/* Activity Timeline */}
       <div>
         <h4 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1.5 px-1">
-          Recent Activity
+          Activity Timeline
         </h4>
-        <div className="flex flex-col gap-1">
-          {agentActivities.map((activity) => (
-            <div key={activity.id} className="text-xs p-2 rounded-lg bg-[var(--color-background)]">
-              <p className="text-[var(--color-card-foreground)] leading-relaxed break-words [overflow-wrap:anywhere]">
-                {activity.message}
-              </p>
-              <p className="text-[var(--color-muted-foreground)] mt-0.5">
-                {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
-              </p>
+        <div className="max-h-[300px] overflow-y-auto">
+          {historyData.length > 0 ? (
+            <div className="relative ml-3 border-l-2 border-[var(--color-border)] pl-4 flex flex-col gap-3 py-1">
+              {historyData.slice(0, 20).map((entry: ActivityLog) => {
+                const { color, Icon } = getActionStyle(entry.action);
+                return (
+                  <div key={entry.id} className="relative">
+                    <div
+                      className="absolute -left-[23px] top-0.5 w-3 h-3 rounded-full border-2 flex items-center justify-center"
+                      style={{ borderColor: color, backgroundColor: 'var(--color-card)' }}
+                    >
+                      <Icon size={7} style={{ color }} />
+                    </div>
+                    <div className="text-xs">
+                      <p className="text-[var(--color-card-foreground)] leading-relaxed break-words [overflow-wrap:anywhere]">
+                        {entry.message}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span
+                          className="inline-block px-1.5 py-0.5 text-[9px] rounded font-medium"
+                          style={{ backgroundColor: `${color}20`, color }}
+                        >
+                          {entry.action.replace(/_/g, ' ')}
+                        </span>
+                        {entry.task_title && (
+                          <span className="text-[10px] text-[var(--color-muted-foreground)] truncate">
+                            {entry.task_title}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-[var(--color-muted-foreground)] mt-0.5">
+                        {formatDistanceToNow(new Date(entry.created_at), { addSuffix: true })}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          ))}
-          {agentActivities.length === 0 && (
+          ) : agentActivities.length > 0 ? (
+            <div className="relative ml-3 border-l-2 border-[var(--color-border)] pl-4 flex flex-col gap-3 py-1">
+              {agentActivities.map((activity) => {
+                const { color, Icon } = getActionStyle(activity.action);
+                return (
+                  <div key={activity.id} className="relative">
+                    <div
+                      className="absolute -left-[23px] top-0.5 w-3 h-3 rounded-full border-2 flex items-center justify-center"
+                      style={{ borderColor: color, backgroundColor: 'var(--color-card)' }}
+                    >
+                      <Icon size={7} style={{ color }} />
+                    </div>
+                    <div className="text-xs">
+                      <p className="text-[var(--color-card-foreground)] leading-relaxed break-words [overflow-wrap:anywhere]">
+                        {activity.message}
+                      </p>
+                      <p className="text-[10px] text-[var(--color-muted-foreground)] mt-0.5">
+                        {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
             <p className="text-xs text-[var(--color-muted-foreground)] text-center py-4">
               No recent activity
             </p>

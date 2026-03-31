@@ -1,13 +1,22 @@
+import { useState } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { useAgents } from '@/hooks/useAgents';
-import { AlertTriangle, RefreshCw, ListChecks } from 'lucide-react';
-import type { TaskStatus } from '@/types';
+import { AlertTriangle, RefreshCw, ListChecks, GitBranch, BarChart3 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import type { TaskStatus, TaskPriority } from '@/types';
 
 const STATUS_CONFIG: { status: TaskStatus; label: string; color: string }[] = [
   { status: 'todo', label: 'Todo', color: 'var(--color-status-todo, #6b7280)' },
   { status: 'in_progress', label: 'In Progress', color: 'var(--color-status-in-progress, #3b82f6)' },
   { status: 'review', label: 'Review', color: 'var(--color-status-review, #f59e0b)' },
   { status: 'done', label: 'Done', color: 'var(--color-status-done, #22c55e)' },
+];
+
+const PRIORITY_CONFIG: { priority: TaskPriority; label: string; color: string }[] = [
+  { priority: 'urgent', label: 'Urgent', color: '#ef4444' },
+  { priority: 'high', label: 'High', color: '#f97316' },
+  { priority: 'medium', label: 'Medium', color: '#eab308' },
+  { priority: 'low', label: 'Low', color: '#6b7280' },
 ];
 
 interface TaskSummaryTabProps {
@@ -23,9 +32,16 @@ function SkeletonSummaryCard() {
   );
 }
 
+const STATUS_BADGE: Record<string, { bg: string; text: string }> = {
+  working: { bg: 'bg-amber-500/20', text: 'text-amber-400' },
+  idle: { bg: 'bg-green-500/20', text: 'text-green-400' },
+  offline: { bg: 'bg-gray-500/20', text: 'text-gray-400' },
+};
+
 export function TaskSummaryTab({ projectId }: TaskSummaryTabProps) {
   const { data: tasks = [], isLoading, isError, refetch } = useTasks(projectId);
   const { data: agents = [] } = useAgents(projectId);
+  const [viewMode, setViewMode] = useState<'summary' | 'workflow'>('summary');
 
   // Loading state
   if (isLoading) {
@@ -89,19 +105,123 @@ export function TaskSummaryTab({ projectId }: TaskSummaryTabProps) {
     return updated >= todayStart;
   }).length;
 
-  // Agent workload: count of assigned (non-done) tasks per agent
-  const agentWorkload = agents.map((agent) => {
-    const assignedCount = tasks.filter(
+  // Agent workload: completed + in-progress per agent
+  const agentWorkloadDetailed = agents.map((agent) => {
+    const completed = tasks.filter(
+      (t) => t.assignee_id === agent.id && t.status === 'done',
+    ).length;
+    const inProgress = tasks.filter(
       (t) => t.assignee_id === agent.id && t.status !== 'done',
     ).length;
-    return { name: agent.name, count: assignedCount };
+    return { name: agent.name, completed, inProgress };
   });
-  const maxWorkload = Math.max(1, ...agentWorkload.map((a) => a.count));
+  const maxAgentTotal = Math.max(1, ...agentWorkloadDetailed.map((a) => a.completed + a.inProgress));
 
   const inProgressTasks = tasks.filter((t) => t.status === 'in_progress');
 
+  // Workflow: group in-progress tasks by agent
+  const agentWorkflow = agents
+    .map((agent) => {
+      const agentInProgress = tasks.filter(
+        (t) => t.assignee_id === agent.id && t.status === 'in_progress',
+      );
+      return { agent, tasks: agentInProgress };
+    })
+    .filter((entry) => entry.tasks.length > 0);
+
   return (
     <div className="flex flex-col gap-3">
+      {/* View toggle */}
+      <div className="flex rounded-lg bg-[var(--color-background)] p-0.5">
+        <button
+          onClick={() => setViewMode('summary')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-medium rounded-md transition-colors',
+            viewMode === 'summary'
+              ? 'bg-[var(--color-primary)] text-white'
+              : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]',
+          )}
+        >
+          <BarChart3 size={12} />
+          Summary
+        </button>
+        <button
+          onClick={() => setViewMode('workflow')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-medium rounded-md transition-colors',
+            viewMode === 'workflow'
+              ? 'bg-[var(--color-primary)] text-white'
+              : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]',
+          )}
+        >
+          <GitBranch size={12} />
+          Workflow
+        </button>
+      </div>
+
+      {/* Workflow view */}
+      {viewMode === 'workflow' && (
+        <div className="flex flex-col gap-2">
+          <h4 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)] px-1">
+            Active Workflows
+          </h4>
+          {agentWorkflow.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {agentWorkflow.map(({ agent, tasks: agentTasks }) => {
+                const badge = STATUS_BADGE[agent.status] || STATUS_BADGE.offline;
+                return (
+                  <div
+                    key={agent.id}
+                    className="p-2.5 rounded-lg bg-[var(--color-background)] border border-[var(--color-border)]"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-semibold text-[var(--color-card-foreground)]">
+                        {agent.name}
+                      </span>
+                      <span
+                        className={cn(
+                          'px-1.5 py-0.5 text-[9px] rounded font-medium',
+                          badge.bg,
+                          badge.text,
+                        )}
+                      >
+                        {agent.status}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      {agentTasks.map((task) => (
+                        <div key={task.id} className="flex items-center gap-2">
+                          <div className="w-1 h-1 rounded-full bg-blue-400 shrink-0" />
+                          <div className="flex-1 flex items-center gap-1.5 min-w-0">
+                            <span className="h-px flex-1 border-t border-dashed border-[var(--color-border)]" />
+                            <span className="text-[11px] text-[var(--color-card-foreground)] truncate max-w-[160px]">
+                              {task.title}
+                            </span>
+                          </div>
+                          <span className="shrink-0 px-1.5 py-0.5 text-[9px] rounded bg-blue-500/20 text-blue-400 font-medium">
+                            WIP
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {agent.current_comment && (
+                      <p className="mt-1.5 text-[10px] text-[var(--color-muted-foreground)] italic truncate">
+                        {agent.current_comment}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-xs text-[var(--color-muted-foreground)] text-center py-4">
+              No active workflows
+            </p>
+          )}
+        </div>
+      )}
+
+      {viewMode === 'summary' && <>
       {/* Progress bar */}
       {totalTasks > 0 && (
         <div className="p-3 rounded-lg bg-[var(--color-background)]">
@@ -147,31 +267,93 @@ export function TaskSummaryTab({ projectId }: TaskSummaryTabProps) {
         ))}
       </div>
 
-      {/* Agent workload mini bar chart */}
-      {agentWorkload.length > 0 && (
+      {/* Priority breakdown */}
+      <div>
+        <h4 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1.5 px-1">
+          Priority Breakdown
+        </h4>
+        <div className="flex flex-col gap-1">
+          {PRIORITY_CONFIG.map(({ priority, label, color }) => {
+            const count = tasks.filter((t) => t.priority === priority).length;
+            const pct = totalTasks > 0 ? (count / totalTasks) * 100 : 0;
+            return (
+              <div key={priority} className="flex items-center gap-2 px-1">
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: color }}
+                />
+                <span className="text-xs text-[var(--color-card-foreground)] w-14 shrink-0">{label}</span>
+                <div className="flex-1 h-3 rounded bg-[var(--color-muted)] overflow-hidden">
+                  {count > 0 && (
+                    <div
+                      className="h-full rounded transition-all duration-300"
+                      style={{ width: `${pct}%`, backgroundColor: color }}
+                    />
+                  )}
+                </div>
+                <span className="text-xs font-medium text-[var(--color-muted-foreground)] w-5 text-right shrink-0">
+                  {count}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Agent workload bar chart (completed vs in-progress) */}
+      {agentWorkloadDetailed.length > 0 && (
         <div>
           <h4 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1.5 px-1">
             Agent Workload
           </h4>
           <div className="flex flex-col gap-1.5">
-            {agentWorkload.map((agent) => (
-              <div key={agent.name} className="flex items-center gap-2 px-1">
-                <span className="text-xs text-[var(--color-card-foreground)] w-20 truncate shrink-0">
-                  {agent.name}
-                </span>
-                <div className="flex-1 h-4 rounded bg-[var(--color-muted)] overflow-hidden">
-                  {agent.count > 0 && (
-                    <div
-                      className="h-full rounded bg-[var(--color-primary)] transition-all duration-300"
-                      style={{ width: `${(agent.count / maxWorkload) * 100}%` }}
-                    />
-                  )}
+            {agentWorkloadDetailed.map((agent) => {
+              const totalAgent = agent.completed + agent.inProgress;
+              const completedPct = maxAgentTotal > 0 ? (agent.completed / maxAgentTotal) * 100 : 0;
+              const inProgressPct = maxAgentTotal > 0 ? (agent.inProgress / maxAgentTotal) * 100 : 0;
+              return (
+                <div key={agent.name} className="flex items-center gap-2 px-1">
+                  <span className="text-xs text-[var(--color-card-foreground)] w-20 truncate shrink-0">
+                    {agent.name}
+                  </span>
+                  <div className="flex-1 h-4 rounded bg-[var(--color-muted)] overflow-hidden flex">
+                    {agent.completed > 0 && (
+                      <div
+                        className="h-full transition-all duration-300"
+                        style={{
+                          width: `${completedPct}%`,
+                          backgroundColor: 'var(--color-status-done, #22c55e)',
+                        }}
+                        title={`Completed: ${agent.completed}`}
+                      />
+                    )}
+                    {agent.inProgress > 0 && (
+                      <div
+                        className="h-full transition-all duration-300"
+                        style={{
+                          width: `${inProgressPct}%`,
+                          backgroundColor: 'var(--color-status-in-progress, #3b82f6)',
+                        }}
+                        title={`In Progress: ${agent.inProgress}`}
+                      />
+                    )}
+                  </div>
+                  <span className="text-xs font-medium text-[var(--color-muted-foreground)] w-5 text-right shrink-0">
+                    {totalAgent}
+                  </span>
                 </div>
-                <span className="text-xs font-medium text-[var(--color-muted-foreground)] w-5 text-right shrink-0">
-                  {agent.count}
-                </span>
-              </div>
-            ))}
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-3 mt-1.5 px-1">
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: 'var(--color-status-done, #22c55e)' }} />
+              <span className="text-[9px] text-[var(--color-muted-foreground)]">Done</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: 'var(--color-status-in-progress, #3b82f6)' }} />
+              <span className="text-[9px] text-[var(--color-muted-foreground)]">In Progress</span>
+            </div>
           </div>
         </div>
       )}
@@ -197,6 +379,7 @@ export function TaskSummaryTab({ projectId }: TaskSummaryTabProps) {
           </div>
         </div>
       )}
+      </>}
     </div>
   );
 }

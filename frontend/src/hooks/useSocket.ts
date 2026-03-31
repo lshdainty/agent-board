@@ -42,9 +42,11 @@ export function useSocket(projectId: number) {
 
         const title = data?.title || 'Unknown';
         if (event === 'task:created') {
-          showToast(`새 태스크: ${title}`);
-        } else if (event === 'task:updated' || event === 'task:claimed' || event === 'task:completed') {
-          showToast(`태스크 업데이트: ${title}`);
+          showToast(`새 태스크: ${title}`, 'info');
+        } else if (event === 'task:completed') {
+          showToast(`태스크 '${title}'이 완료되었습니다`, 'success');
+        } else if (event === 'task:updated' || event === 'task:claimed') {
+          showToast(`태스크 업데이트: ${title}`, 'info');
         }
       });
     });
@@ -56,7 +58,8 @@ export function useSocket(projectId: number) {
         if (event === 'agent:status_changed') {
           const agentName = data?.agent || data?.name || 'Agent';
           const status = data?.status || 'unknown';
-          showToast(`${agentName} → ${status}`);
+          const statusLabel = status === 'working' ? '작업을 시작했습니다' : status === 'idle' ? '대기 상태입니다' : '오프라인입니다';
+          showToast(`${agentName}가 ${statusLabel}`, 'warning');
         }
       });
     });

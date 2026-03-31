@@ -7,6 +7,7 @@ import agentsRouter from './routes/agents.js';
 import projectsRouter from './routes/projects.js';
 import activitiesRouter from './routes/activities.js';
 import notifyRouter from './routes/notify.js';
+import metricsRouter from './routes/metrics.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -19,6 +20,7 @@ app.use('/api/agents', agentsRouter);
 app.use('/api/projects', projectsRouter);
 app.use('/api/activities', activitiesRouter);
 app.use('/api/notify', notifyRouter);
+app.use('/api/metrics', metricsRouter);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 

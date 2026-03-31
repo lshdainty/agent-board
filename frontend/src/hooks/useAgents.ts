@@ -38,6 +38,8 @@ export function useCreateAgent() {
 export interface UpdateAgentPayload {
   name?: string;
   role?: string;
+  status?: string;
+  current_comment?: string | null;
 }
 
 export function useUpdateAgent() {

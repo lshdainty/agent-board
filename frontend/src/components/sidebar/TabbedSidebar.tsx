@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, ListTodo, Activity, Settings } from 'lucide-react';
+import { Users, ListTodo, Activity, Settings, GitBranch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSelectedAgent } from '@/hooks/useSelectedAgent';
 import { AgentListTab } from './AgentListTab';
@@ -7,9 +7,10 @@ import { AgentDetailPanel } from './AgentDetailPanel';
 import { TaskSummaryTab } from './TaskSummaryTab';
 import { ActivityTab } from './ActivityTab';
 import { SettingsTab } from './SettingsTab';
+import { WorkflowTab } from './WorkflowTab';
 import type { ComponentType } from 'react';
 
-type TabId = 'agents' | 'tasks' | 'activity' | 'settings';
+type TabId = 'agents' | 'tasks' | 'activity' | 'workflow' | 'settings';
 
 interface TabConfig {
   id: TabId;
@@ -21,6 +22,7 @@ const TABS: TabConfig[] = [
   { id: 'agents', label: 'Agents', icon: Users },
   { id: 'tasks', label: 'Tasks', icon: ListTodo },
   { id: 'activity', label: 'Activity', icon: Activity },
+  { id: 'workflow', label: 'Workflow', icon: GitBranch },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
@@ -97,7 +99,8 @@ export function TabbedSidebar({ projectId, theme, onToggleTheme, externalTab, on
         )}
         {activeTab === 'tasks' && <TaskSummaryTab projectId={projectId} />}
         {activeTab === 'activity' && <ActivityTab projectId={projectId} />}
-        {activeTab === 'settings' && <SettingsTab theme={theme} onToggleTheme={onToggleTheme} />}
+        {activeTab === 'workflow' && <WorkflowTab projectId={projectId} />}
+        {activeTab === 'settings' && <SettingsTab theme={theme} onToggleTheme={onToggleTheme} projectId={projectId} />}
       </div>
     </div>
   );
