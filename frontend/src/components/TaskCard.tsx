@@ -1,7 +1,8 @@
 import { useDraggable } from '@dnd-kit/core';
 import { cn } from '@/lib/utils';
 import type { Task } from '@/types';
-import { GripVertical, User, CheckCircle2 } from 'lucide-react';
+import { GripVertical, User, CheckCircle2, Clock } from 'lucide-react';
+import { formatDistanceToNow, differenceInDays } from 'date-fns';
 
 const PRIORITY_COLORS: Record<string, string> = {
   low: 'border-l-[var(--color-priority-low)]',
@@ -16,6 +17,25 @@ const PRIORITY_LABELS: Record<string, string> = {
   high: 'High',
   urgent: 'Urgent',
 };
+
+function TimeStamp({ task }: { task: Task }) {
+  const updated = new Date(task.updated_at);
+  const daysOld = differenceInDays(new Date(), updated);
+  const isStale = daysOld >= 7;
+  return (
+    <span
+      className={cn(
+        'flex items-center gap-0.5 text-[10px] ml-auto',
+        isStale ? 'text-amber-500' : 'text-[var(--color-muted-foreground)]',
+      )}
+      title={`Updated: ${updated.toLocaleString()}\nCreated: ${new Date(task.created_at).toLocaleString()}`}
+    >
+      <Clock size={9} />
+      {formatDistanceToNow(updated, { addSuffix: false })}
+      {isStale && ' !'}
+    </span>
+  );
+}
 
 interface TaskCardProps {
   task: Task;
@@ -40,6 +60,8 @@ export function TaskCard({ task, isDragOverlay, onCardClick }: TaskCardProps) {
       <div
         ref={setNodeRef}
         style={style}
+        role="option"
+        aria-label={`${task.title}, priority ${PRIORITY_LABELS[task.priority]}, done`}
         className={cn(
           'rounded-md border border-l-4 bg-[var(--color-card)] px-2.5 py-1.5 shadow-sm transition-all opacity-75',
           PRIORITY_COLORS[task.priority],
@@ -64,10 +86,19 @@ export function TaskCard({ task, isDragOverlay, onCardClick }: TaskCardProps) {
     );
   }
 
+  const STATUS_TEXT: Record<string, string> = {
+    todo: 'todo',
+    in_progress: 'in progress',
+    review: 'review',
+    done: 'done',
+  };
+
   return (
     <div
       ref={!isDragOverlay ? setNodeRef : undefined}
       style={style}
+      role="option"
+      aria-label={`${task.title}, priority ${PRIORITY_LABELS[task.priority]}, ${STATUS_TEXT[task.status] || task.status}${task.assignee_name ? `, assigned to ${task.assignee_name}` : ''}`}
       className={cn(
         'rounded-lg border border-l-4 bg-[var(--color-card)] p-3 shadow-sm transition-all',
         PRIORITY_COLORS[task.priority],
@@ -99,7 +130,7 @@ export function TaskCard({ task, isDragOverlay, onCardClick }: TaskCardProps) {
               {task.description}
             </p>
           )}
-          <div className="flex items-center gap-2 mt-1.5">
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
             <span
               className="text-[10px] font-medium px-1.5 py-0.5 rounded"
               style={{
@@ -115,6 +146,7 @@ export function TaskCard({ task, isDragOverlay, onCardClick }: TaskCardProps) {
                 {task.assignee_name}
               </span>
             )}
+            <TimeStamp task={task} />
           </div>
         </div>
       </div>

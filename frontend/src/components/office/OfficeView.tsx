@@ -1,4 +1,4 @@
-import { Suspense, Component, type ReactNode } from 'react'
+import { Suspense, Component, type ReactNode, useRef, useCallback } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OfficeScene } from './OfficeScene'
 import { useAgents } from '@/hooks/useAgents'
@@ -117,6 +117,8 @@ export function OfficeView({ projectId, theme }: OfficeViewProps) {
   const { settings } = useSettings()
   const bg = BG[theme]
   const isLoading = agentsLoading || tasksLoading
+  const resetCameraRef = useRef<(() => void) | null>(null)
+  const handleResetRef = useCallback((fn: () => void) => { resetCameraRef.current = fn }, [])
 
   return (
     <div style={{ width: '100%', height: '100%', background: bg, borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
@@ -132,7 +134,7 @@ export function OfficeView({ projectId, theme }: OfficeViewProps) {
           }}
         >
           <Suspense fallback={null}>
-            {!isLoading && <OfficeScene agents={agents} tasks={tasks} theme={theme} />}
+            {!isLoading && <OfficeScene agents={agents} tasks={tasks} theme={theme} onResetRef={handleResetRef} />}
           </Suspense>
         </Canvas>
       </Scene3DErrorBoundary>
@@ -165,6 +167,36 @@ export function OfficeView({ projectId, theme }: OfficeViewProps) {
           </div>
         </div>
       )}
+
+      {/* Camera reset button */}
+      <button
+        onClick={() => resetCameraRef.current?.()}
+        title="Reset camera"
+        style={{
+          position: 'absolute',
+          top: '12px',
+          right: '12px',
+          width: '32px',
+          height: '32px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '8px',
+          border: `1px solid ${theme === 'dark' ? '#334155' : '#cbd5e1'}`,
+          background: theme === 'dark' ? 'rgba(15,23,42,0.8)' : 'rgba(255,255,255,0.8)',
+          color: theme === 'dark' ? '#94a3b8' : '#64748b',
+          cursor: 'pointer',
+          backdropFilter: 'blur(8px)',
+          zIndex: 5,
+          fontSize: '14px',
+          lineHeight: 1,
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+      </button>
 
       <div
         style={{

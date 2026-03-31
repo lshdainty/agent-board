@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
@@ -11,16 +11,34 @@ interface CreateAgentDialogProps {
 
 export function CreateAgentDialog({ projectId, onClose }: CreateAgentDialogProps) {
   const createAgent = useCreateAgent();
+  const modalRef = useRef<HTMLDivElement>(null);
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
 
+  // Focus trap
+  const handleFocusTrap = useCallback((e: KeyboardEvent) => {
+    if (e.key !== 'Tab' || !modalRef.current) return;
+    const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+      if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      handleFocusTrap(e);
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, handleFocusTrap]);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -47,6 +65,10 @@ export function CreateAgentDialog({ projectId, onClose }: CreateAgentDialogProps
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Add new agent"
         className={cn(
           'relative w-full max-w-sm rounded-xl border border-[var(--color-border)]',
           'bg-[var(--color-card)] shadow-2xl',

@@ -428,6 +428,8 @@ function Dashboard() {
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<string>('agents');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const prevProjectIdRef = useRef(projectId);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useTheme();
   const { isConnected } = useSocket(projectId);
@@ -448,6 +450,16 @@ function Dashboard() {
   // Persist projectId to localStorage
   useEffect(() => {
     localStorage.setItem('selectedProjectId', String(projectId));
+  }, [projectId]);
+
+  // Fade transition on project switch
+  useEffect(() => {
+    if (prevProjectIdRef.current !== projectId) {
+      setIsTransitioning(true);
+      const timer = setTimeout(() => setIsTransitioning(false), 400);
+      prevProjectIdRef.current = projectId;
+      return () => clearTimeout(timer);
+    }
   }, [projectId]);
 
   // Auto-select first project when projects load (only if saved project doesn't exist)
@@ -637,10 +649,22 @@ function Dashboard() {
 
       <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_300px] gap-4 p-4 overflow-hidden min-h-0">
         <div className="overflow-hidden h-full relative">
-          {activeView === 'kanban' ? (
-            <KanbanBoard projectId={projectId} />
-          ) : (
-            <OfficeView projectId={projectId} theme={theme} />
+          {/* Fade transition on project switch */}
+          <div
+            className="h-full transition-opacity duration-300 ease-in-out"
+            style={{ opacity: isTransitioning ? 0 : 1 }}
+          >
+            {activeView === 'kanban' ? (
+              <KanbanBoard projectId={projectId} />
+            ) : (
+              <OfficeView projectId={projectId} theme={theme} />
+            )}
+          </div>
+          {/* Loading overlay during transition */}
+          {isTransitioning && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-6 h-6 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
+            </div>
           )}
         </div>
         {/* Desktop sidebar */}

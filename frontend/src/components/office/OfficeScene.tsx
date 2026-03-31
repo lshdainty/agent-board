@@ -12,6 +12,7 @@ interface OfficeSceneProps {
   agents: Agent[]
   tasks: Task[]
   theme: 'light' | 'dark'
+  onResetRef?: (resetFn: () => void) => void
 }
 
 const BG = { light: '#e8ecf4', dark: '#080c18' } as const
@@ -76,9 +77,27 @@ function CameraTracker({
   return null
 }
 
-export function OfficeScene({ agents, tasks, theme }: OfficeSceneProps) {
+export function OfficeScene({ agents, tasks, theme, onResetRef }: OfficeSceneProps) {
   const isDark = theme === 'dark'
   const controlsRef = useRef<any>(null)
+  const { camera } = useThree()
+
+  // Expose reset function to parent
+  useEffect(() => {
+    if (onResetRef) {
+      onResetRef(() => {
+        if (camera instanceof THREE.OrthographicCamera) {
+          camera.position.set(15, 15, 15)
+          camera.zoom = 40
+          camera.updateProjectionMatrix()
+        }
+        if (controlsRef.current) {
+          controlsRef.current.target.set(0, 0, 0)
+          controlsRef.current.update()
+        }
+      })
+    }
+  }, [camera, onResetRef])
 
   return (
     <>

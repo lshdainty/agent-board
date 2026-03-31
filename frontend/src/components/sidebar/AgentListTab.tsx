@@ -1,8 +1,8 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import { useAgents } from '@/hooks/useAgents';
 import { useSelectedAgent } from '@/hooks/useSelectedAgent';
 import { cn } from '@/lib/utils';
-import { Plus, RefreshCw, AlertTriangle, Users } from 'lucide-react';
+import { Plus, RefreshCw, AlertTriangle, Users, Search, X } from 'lucide-react';
 import { CreateAgentDialog } from './CreateAgentDialog';
 import type { Agent, AgentStatus } from '@/types';
 
@@ -18,19 +18,39 @@ interface AgentListTabProps {
   projectId: number;
 }
 
+const STATUS_DOT_LABELS: Record<AgentStatus, string> = {
+  working: 'working',
+  idle: 'idle',
+  offline: 'offline',
+};
+
 function StatusDot({ status }: { status: AgentStatus }) {
+  const label = STATUS_DOT_LABELS[status];
   if (status === 'working') {
     return (
-      <span className="relative w-2 h-2 shrink-0">
-        <span className="absolute inset-0 rounded-full bg-amber-400 animate-ping opacity-75" />
-        <span className="relative block w-2 h-2 rounded-full bg-amber-400" />
+      <span className="inline-flex items-center gap-1 shrink-0">
+        <span className="relative w-2 h-2">
+          <span className="absolute inset-0 rounded-full bg-amber-400 animate-ping opacity-75" />
+          <span className="relative block w-2 h-2 rounded-full bg-amber-400" />
+        </span>
+        <span className="text-[9px] text-amber-500">({label})</span>
       </span>
     );
   }
   if (status === 'idle') {
-    return <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" />;
+    return (
+      <span className="inline-flex items-center gap-1 shrink-0">
+        <span className="w-2 h-2 rounded-full bg-green-400" />
+        <span className="text-[9px] text-green-500">({label})</span>
+      </span>
+    );
   }
-  return <span className="w-2 h-2 rounded-full bg-gray-500 shrink-0" />;
+  return (
+    <span className="inline-flex items-center gap-1 shrink-0">
+      <span className="w-2 h-2 rounded-full bg-gray-500" />
+      <span className="text-[9px] text-gray-400">({label})</span>
+    </span>
+  );
 }
 
 function AgentRow({ agent, isSelected, onToggle }: { agent: Agent; isSelected: boolean; onToggle: () => void }) {
@@ -87,6 +107,15 @@ export function AgentListTab({ projectId }: AgentListTabProps) {
   const { data: agents = [], isLoading, isError, refetch } = useAgents(projectId);
   const { selectedAgentId, toggleSelectedAgent } = useSelectedAgent();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredAgents = useMemo(() => {
+    if (!searchQuery.trim()) return agents;
+    const q = searchQuery.toLowerCase();
+    return agents.filter(
+      (a) => a.name.toLowerCase().includes(q) || a.role.toLowerCase().includes(q),
+    );
+  }, [agents, searchQuery]);
 
   // Loading state
   if (isLoading) {
@@ -125,7 +154,7 @@ export function AgentListTab({ projectId }: AgentListTabProps) {
 
   const grouped = STATUS_ORDER.reduce<Record<AgentStatus, Agent[]>>(
     (acc, status) => {
-      acc[status] = agents.filter((a) => a.status === status);
+      acc[status] = filteredAgents.filter((a) => a.status === status);
       return acc;
     },
     { working: [], idle: [], offline: [] },
@@ -133,6 +162,25 @@ export function AgentListTab({ projectId }: AgentListTabProps) {
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Search input */}
+      <div className="relative">
+        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)]" />
+        <input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by name or role..."
+          className="w-full pl-8 pr-7 py-2 text-xs rounded-md border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] placeholder:text-[var(--color-muted-foreground)]"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+          >
+            <X size={12} />
+          </button>
+        )}
+      </div>
+
       {/* Add Agent button */}
       <button
         onClick={() => setShowCreateDialog(true)}
@@ -170,6 +218,11 @@ export function AgentListTab({ projectId }: AgentListTabProps) {
             No agents registered yet
           </p>
         </div>
+      )}
+      {agents.length > 0 && filteredAgents.length === 0 && searchQuery && (
+        <p className="text-xs text-[var(--color-muted-foreground)] text-center py-4">
+          No agents matching &ldquo;{searchQuery}&rdquo;
+        </p>
       )}
 
       {showCreateDialog && (

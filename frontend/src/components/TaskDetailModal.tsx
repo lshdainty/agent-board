@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import type { Task, TaskStatus, TaskPriority, Agent } from '@/types';
@@ -32,6 +32,7 @@ interface TaskDetailModalProps {
 
 export function TaskDetailModal({ task, agents = [], onClose }: TaskDetailModalProps) {
   const updateTask = useUpdateTask();
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // Editable state
   const [editingTitle, setEditingTitle] = useState(false);
@@ -41,8 +42,25 @@ export function TaskDetailModal({ task, agents = [], onClose }: TaskDetailModalP
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descInputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Focus trap
+  const handleFocusTrap = useCallback((e: KeyboardEvent) => {
+    if (e.key !== 'Tab' || !modalRef.current) return;
+    const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+      if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      handleFocusTrap(e);
       if (e.key === 'Escape') {
         if (editingTitle) { setEditingTitle(false); setTitleValue(task.title); return; }
         if (editingDesc) { setEditingDesc(false); setDescValue(task.description || ''); return; }
@@ -51,7 +69,7 @@ export function TaskDetailModal({ task, agents = [], onClose }: TaskDetailModalP
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, editingTitle, editingDesc, task.title, task.description]);
+  }, [onClose, editingTitle, editingDesc, task.title, task.description, handleFocusTrap]);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -121,6 +139,10 @@ export function TaskDetailModal({ task, agents = [], onClose }: TaskDetailModalP
 
       {/* Modal */}
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Task details: ${task.title}`}
         className={cn(
           'relative w-full max-w-lg rounded-xl border border-[var(--color-border)]',
           'bg-[var(--color-card)] shadow-2xl',

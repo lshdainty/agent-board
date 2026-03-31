@@ -15,7 +15,36 @@ import { CreateTaskDialog } from './CreateTaskDialog';
 import { useTasks, useUpdateTaskStatus } from '@/hooks/useTasks';
 import { useAgents } from '@/hooks/useAgents';
 import type { Task, TaskStatus, TaskPriority } from '@/types';
-import { Plus, Search, Filter, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Filter, RefreshCw, AlertTriangle, ArrowUpDown } from 'lucide-react';
+
+type SortOption = 'default' | 'priority' | 'newest' | 'updated';
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'default', label: 'Default' },
+  { value: 'priority', label: 'Priority (urgent first)' },
+  { value: 'newest', label: 'Newest first' },
+  { value: 'updated', label: 'Recently updated' },
+];
+
+const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
+
+function sortTasks(tasks: Task[], sortBy: SortOption): Task[] {
+  if (sortBy === 'default') return tasks;
+  return [...tasks].sort((a, b) => {
+    if (sortBy === 'priority') return (PRIORITY_ORDER[a.priority] ?? 4) - (PRIORITY_ORDER[b.priority] ?? 4);
+    if (sortBy === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    if (sortBy === 'updated') return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    return 0;
+  });
+}
+import { cn } from '@/lib/utils';
+
+const STATUS_COLORS: Record<TaskStatus, string> = {
+  todo: 'var(--color-status-todo)',
+  in_progress: 'var(--color-status-in-progress)',
+  review: 'var(--color-status-review)',
+  done: 'var(--color-status-done)',
+};
 
 const COLUMNS: { id: TaskStatus; title: string }[] = [
   { id: 'todo', title: 'Todo' },
@@ -44,10 +73,14 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
-  // Search & filter state
+  // Mobile tab state
+  const [mobileActiveTab, setMobileActiveTab] = useState<TaskStatus>('todo');
+
+  // Search, filter & sort state
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<number | 'all'>('all');
+  const [sortOption, setSortOption] = useState<SortOption>('default');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -95,9 +128,12 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
           <div className="h-5 w-16 bg-[var(--color-muted)] rounded animate-pulse" />
           <div className="h-8 w-24 bg-[var(--color-muted)] rounded animate-pulse" />
         </div>
-        <div className="grid grid-cols-4 gap-4 flex-1 min-h-0">
-          {COLUMNS.map((col) => (
-            <div key={col.id} className="flex flex-col rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] min-h-0 h-full overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 min-h-0">
+          {COLUMNS.map((col, idx) => (
+            <div key={col.id} className={cn(
+              'flex flex-col rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] min-h-0 h-full overflow-hidden',
+              idx > 0 && 'hidden md:flex',
+            )}>
               <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
                 <div className="h-4 w-20 bg-[var(--color-muted)] rounded animate-pulse" />
                 <div className="h-5 w-6 bg-[var(--color-muted)] rounded-full animate-pulse" />
@@ -139,7 +175,7 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
     );
   }
 
-  const hasActiveFilters = searchQuery || priorityFilter !== 'all' || assigneeFilter !== 'all';
+  const hasActiveFilters = searchQuery || priorityFilter !== 'all' || assigneeFilter !== 'all' || sortOption !== 'default';
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -190,12 +226,26 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
               <option key={agent.id} value={String(agent.id)}>{agent.name}</option>
             ))}
           </select>
+          <div className="relative">
+            <ArrowUpDown size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)] pointer-events-none" />
+            <select
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value as SortOption)}
+              aria-label="Sort tasks"
+              className="appearance-none pl-7 pr-6 py-1.5 text-xs rounded-md border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-shadow cursor-pointer"
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
           {hasActiveFilters && (
             <button
               onClick={() => {
                 setSearchQuery('');
                 setPriorityFilter('all');
                 setAssigneeFilter('all');
+                setSortOption('default');
               }}
               className="px-2 py-1.5 text-xs text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors"
             >
@@ -204,13 +254,52 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
           )}
         </div>
 
-        <div className="grid grid-cols-4 gap-4 flex-1 min-h-0">
+        {/* Mobile: tabbed view */}
+        <div className="flex flex-col flex-1 min-h-0 md:hidden">
+          <div className="flex shrink-0 border-b border-[var(--color-border)] gap-1 overflow-x-auto">
+            {COLUMNS.map((col) => {
+              const count = filteredTasks.filter((t) => t.status === col.id).length;
+              return (
+                <button
+                  key={col.id}
+                  onClick={() => setMobileActiveTab(col.id)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-colors',
+                    mobileActiveTab === col.id
+                      ? 'border-[var(--color-primary)] text-[var(--color-foreground)]'
+                      : 'border-transparent text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]',
+                  )}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: STATUS_COLORS[col.id] }}
+                  />
+                  {col.title}
+                  <span className="text-[10px] bg-[var(--color-muted)] rounded-full px-1.5 py-0.5">
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto p-2">
+            <KanbanColumn
+              id={mobileActiveTab}
+              title={COLUMNS.find((c) => c.id === mobileActiveTab)!.title}
+              tasks={sortTasks(filteredTasks.filter((t) => t.status === mobileActiveTab), sortOption)}
+              onTaskClick={(task) => setSelectedTask(task)}
+            />
+          </div>
+        </div>
+
+        {/* Desktop: 4-column grid */}
+        <div className="hidden md:grid grid-cols-4 gap-4 flex-1 min-h-0">
           {COLUMNS.map((col) => (
             <KanbanColumn
               key={col.id}
               id={col.id}
               title={col.title}
-              tasks={filteredTasks.filter((t) => t.status === col.id)}
+              tasks={sortTasks(filteredTasks.filter((t) => t.status === col.id), sortOption)}
               onTaskClick={(task) => setSelectedTask(task)}
             />
           ))}

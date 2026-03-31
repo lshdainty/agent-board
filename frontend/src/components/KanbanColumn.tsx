@@ -35,6 +35,8 @@ export function KanbanColumn({ id, title, tasks, onTaskClick }: KanbanColumnProp
   return (
     <div
       ref={setNodeRef}
+      role="listbox"
+      aria-label={`${title} column, ${tasks.length} tasks`}
       className={cn(
         'flex flex-col rounded-xl bg-[var(--color-background)] border border-[var(--color-border)] min-h-0 h-full overflow-hidden transition-all',
         isOver && 'ring-2 ring-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_5%,var(--color-background))]',

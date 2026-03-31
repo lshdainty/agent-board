@@ -53,7 +53,32 @@ export function AgentDetailPanel({ agentId, projectId, onClose }: AgentDetailPan
   const agentTasks = tasks.filter((t) => t.assignee_id === agentId);
   const currentTasks = agentTasks.filter((t) => t.status === 'in_progress');
   const assignedTasks = agentTasks.filter((t) => t.status !== 'done');
+  const todoCount = agentTasks.filter((t) => t.status === 'todo').length;
+  const inProgressCount = currentTasks.length;
+  const reviewCount = agentTasks.filter((t) => t.status === 'review').length;
   const completedCount = agentTasks.filter((t) => t.status === 'done').length;
+  const totalCount = agentTasks.length;
+  const completionPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+  // Status distribution for donut chart
+  const statusSegments = [
+    { label: 'Done', count: completedCount, color: '#22c55e' },
+    { label: 'In Progress', count: inProgressCount, color: '#3b82f6' },
+    { label: 'Review', count: reviewCount, color: '#eab308' },
+    { label: 'Todo', count: todoCount, color: '#6b7280' },
+  ].filter((s) => s.count > 0);
+
+  // Compute SVG donut segments (stroke-dasharray based)
+  const donutSegments = (() => {
+    let offset = 25; // start from top (25% offset = 12 o'clock)
+    return statusSegments.map((seg) => {
+      const pct = totalCount > 0 ? (seg.count / totalCount) * 100 : 0;
+      const dashArray = `${pct} ${100 - pct}`;
+      const dashOffset = 100 - offset;
+      offset = (offset + pct) % 100;
+      return { ...seg, pct, dashArray, dashOffset };
+    });
+  })();
 
   // Last activity timestamp
   const lastActivity = agentActivities.length > 0 ? agentActivities[0] : null;
@@ -221,7 +246,18 @@ export function AgentDetailPanel({ agentId, projectId, onClose }: AgentDetailPan
                   <option value="offline">Offline</option>
                 </select>
               </div>
-              <span>Completed: {completedCount} tasks</span>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span>Completed</span>
+                  <span className="font-medium text-[var(--color-foreground)]">{completedCount}/{totalCount} tasks ({completionPct}%)</span>
+                </div>
+                <div className="h-2 rounded-full bg-[var(--color-muted)] overflow-hidden">
+                  <div
+                    className="h-full bg-green-500 rounded-full transition-all duration-300"
+                    style={{ width: `${completionPct}%` }}
+                  />
+                </div>
+              </div>
               {lastActivity && (
                 <span>
                   Last activity: {formatDistanceToNow(new Date(lastActivity.created_at), { addSuffix: true })}
@@ -231,6 +267,46 @@ export function AgentDetailPanel({ agentId, projectId, onClose }: AgentDetailPan
           </>
         )}
       </div>
+
+      {/* Task Status Distribution */}
+      {totalCount > 0 && (
+        <div className="p-3 rounded-lg bg-[var(--color-background)]">
+          <h4 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-muted-foreground)] mb-2">
+            Task Distribution
+          </h4>
+          <div className="flex items-center gap-4">
+            <svg viewBox="0 0 36 36" width="72" height="72" className="shrink-0">
+              {donutSegments.map((seg, i) => (
+                <circle
+                  key={i}
+                  cx="18"
+                  cy="18"
+                  r="15.91"
+                  fill="none"
+                  stroke={seg.color}
+                  strokeWidth="3"
+                  strokeDasharray={seg.dashArray}
+                  strokeDashoffset={seg.dashOffset}
+                  strokeLinecap="round"
+                  className="transition-all duration-300"
+                />
+              ))}
+              <text x="18" y="19.5" textAnchor="middle" className="fill-[var(--color-foreground)]" fontSize="7" fontWeight="600">
+                {completionPct}%
+              </text>
+            </svg>
+            <div className="flex flex-col gap-1.5 text-xs min-w-0">
+              {donutSegments.map((seg, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
+                  <span className="text-[var(--color-muted-foreground)] truncate">{seg.label}</span>
+                  <span className="ml-auto font-medium text-[var(--color-foreground)]">{seg.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Current tasks (in_progress) */}
       {currentTasks.length > 0 && (
